@@ -9,10 +9,9 @@
 import type { Rule, Finding, ScanContext } from '../../types/index.js';
 import { Severity, Confidence, RuleCategory } from '../../types/index.js';
 import { isPlaceholder } from '../../parsers/plist-parser.js';
-import { makeFinding } from '../base.js';
+import { makeFinding, makeCustomFinding } from '../base.js';
 
-// Frameworks that may use microphone
-// Note: AVFoundation is included because it can record audio, though it's also used for playback
+// Frameworks that definitely use microphone for recording
 const MICROPHONE_FRAMEWORKS = ['AVFAudio', 'Speech'];
 const MICROPHONE_KEY = 'NSMicrophoneUsageDescription';
 const SPEECH_KEY = 'NSSpeechRecognitionUsageDescription';
@@ -30,8 +29,10 @@ export const MissingMicrophonePurposeRule: Rule = {
     // Check if any audio recording framework is linked
     const detectedFrameworks = MICROPHONE_FRAMEWORKS.filter(f => context.hasFramework(f));
     
-    // Also check if AVFoundation is linked (may use microphone for recording)
+    // AVFoundation CAN record audio but is also used by virtually every app that plays video/audio.
+    // Only flag it with lower confidence when no other microphone frameworks are present.
     const hasAVFoundation = context.hasFramework('AVFoundation');
+    const hasOnlyAVFoundation = hasAVFoundation && detectedFrameworks.length === 0;
     
     if (detectedFrameworks.length === 0 && !hasAVFoundation) {
       return [];
@@ -43,7 +44,7 @@ export const MissingMicrophonePurposeRule: Rule = {
     
     // Determine which frameworks to report
     const frameworksToReport = hasAVFoundation 
-      ? [...detectedFrameworks, 'AVFoundation (audio recording)']
+      ? [...detectedFrameworks, 'AVFoundation']
       : detectedFrameworks;
 
     // If Speech framework is linked, check for speech recognition description
@@ -82,12 +83,21 @@ Note: You'll also need NSMicrophoneUsageDescription since speech recognition req
       }
     }
 
+    // When only AVFoundation is detected (no AVFAudio/Speech), use Medium confidence
+    // since AVFoundation is commonly used for audio/video playback, not just recording
+    const confidenceLevel = hasOnlyAVFoundation ? Confidence.Medium : Confidence.High;
+    const avFoundationCaveat = hasOnlyAVFoundation 
+      ? `\n\nNote: AVFoundation is commonly used for audio/video playback. If your app only plays ` +
+        `media and doesn't record audio, you may not need this permission.`
+      : '';
+
     // Case 1: Completely missing microphone description
     if (microphoneDescription === undefined) {
-      findings.push(makeFinding(this, {
+      findings.push(makeCustomFinding(this, this.severity, confidenceLevel, {
+        title: 'Missing Microphone Usage Description',
         description: `Your app links against audio frameworks (${frameworksToReport.join(', ')}) ` +
           `but Info.plist is missing NSMicrophoneUsageDescription. Apps that access the microphone ` +
-          `must provide a purpose string explaining why access is needed.`,
+          `must provide a purpose string explaining why access is needed.${avFoundationCaveat}`,
         location: 'Info.plist',
         fixGuidance: `Add NSMicrophoneUsageDescription to your Info.plist with a clear, user-facing explanation ` +
           `of why your app needs microphone access. For example:
@@ -101,10 +111,10 @@ The description should explain the specific feature that uses the microphone.`,
     }
     // Case 2: Empty description
     else if (microphoneDescription.trim() === '') {
-      findings.push(makeFinding(this, {
+      findings.push(makeCustomFinding(this, this.severity, confidenceLevel, {
         title: 'Empty Microphone Usage Description',
         description: `NSMicrophoneUsageDescription exists in Info.plist but is empty. ` +
-          `Apple requires a meaningful description explaining why your app needs microphone access.`,
+          `Apple requires a meaningful description explaining why your app needs microphone access.${avFoundationCaveat}`,
         location: 'Info.plist',
         fixGuidance: `Update NSMicrophoneUsageDescription with a clear, specific explanation of why your app ` +
           `needs microphone access. Generic or empty descriptions will be rejected.
@@ -116,10 +126,10 @@ Bad example: "Microphone access required" or ""`,
     }
     // Case 3: Placeholder text detected
     else if (isPlaceholder(microphoneDescription)) {
-      findings.push(makeFinding(this, {
+      findings.push(makeCustomFinding(this, this.severity, confidenceLevel, {
         title: 'Placeholder Microphone Usage Description',
         description: `NSMicrophoneUsageDescription appears to contain placeholder text: "${microphoneDescription}". ` +
-          `Apple requires meaningful, user-facing descriptions.`,
+          `Apple requires meaningful, user-facing descriptions.${avFoundationCaveat}`,
         location: 'Info.plist',
         fixGuidance: `Replace the placeholder text with a clear explanation of why your app needs microphone access. ` +
           `The description should be specific to your app's features.

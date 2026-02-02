@@ -55,6 +55,24 @@ describe('MissingPhotoLibraryPurposeRule', () => {
     expect(findings[0].title).toBe('Empty Photo Library Usage Description');
   });
 
+  it('should find whitespace-only NSPhotoLibraryUsageDescription', async () => {
+    const context = createContextObject(
+      '/test/project',
+      {
+        CFBundleIdentifier: 'com.example.app',
+        NSPhotoLibraryUsageDescription: '   ',
+      },
+      {},
+      new Set(['Photos']),
+      []
+    );
+
+    const findings = await MissingPhotoLibraryPurposeRule.evaluate(context);
+    
+    expect(findings).toHaveLength(1);
+    expect(findings[0].title).toBe('Empty Photo Library Usage Description');
+  });
+
   it('should find placeholder NSPhotoLibraryUsageDescription', async () => {
     const context = createContextObject(
       '/test/project',

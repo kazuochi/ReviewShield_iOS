@@ -15,27 +15,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Required Reason API categories that need to be declared in the privacy manifest.
- * Reference: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api
- */
-const REQUIRED_REASON_API_INDICATORS = [
-  // File timestamp APIs (NSFileManager stat, etc.)
-  { indicator: 'NSFileManager', category: 'File timestamp APIs', reason: 'creationDate, modificationDate' },
-  
-  // System boot time APIs
-  { indicator: 'ProcessInfo', category: 'System boot time APIs', reason: 'systemUptime' },
-  
-  // Disk space APIs
-  { indicator: 'FileManager', category: 'Disk space APIs', reason: 'volumeAvailableCapacity' },
-  
-  // User defaults APIs (cross-app tracking)
-  { indicator: 'UserDefaults', category: 'User defaults APIs', reason: 'standard UserDefaults' },
-  
-  // Active keyboard APIs
-  { indicator: 'UITextInputMode', category: 'Active keyboard APIs', reason: 'activeInputModes' },
-];
-
-/**
  * SDK dependencies commonly known to require privacy manifests
  */
 const SDK_REQUIRING_PRIVACY_MANIFEST = [

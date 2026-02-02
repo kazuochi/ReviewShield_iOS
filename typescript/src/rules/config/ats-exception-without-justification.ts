@@ -14,7 +14,6 @@ import { makeFinding, makeCustomFinding } from '../base.js';
 const ATS_KEY = 'NSAppTransportSecurity';
 const ALLOWS_ARBITRARY_LOADS_KEY = 'NSAllowsArbitraryLoads';
 const ALLOWS_ARBITRARY_LOADS_WEBVIEW_KEY = 'NSAllowsArbitraryLoadsInWebContent';
-const ALLOWS_LOCAL_NETWORKING_KEY = 'NSAllowsLocalNetworking';
 const EXCEPTION_DOMAINS_KEY = 'NSExceptionDomains';
 
 export const ATSExceptionWithoutJustificationRule: Rule = {
@@ -38,7 +37,6 @@ export const ATSExceptionWithoutJustificationRule: Rule = {
     
     const allowsArbitraryLoads = atsConfig[ALLOWS_ARBITRARY_LOADS_KEY] as boolean | undefined;
     const allowsArbitraryLoadsWebView = atsConfig[ALLOWS_ARBITRARY_LOADS_WEBVIEW_KEY] as boolean | undefined;
-    const allowsLocalNetworking = atsConfig[ALLOWS_LOCAL_NETWORKING_KEY] as boolean | undefined;
     const exceptionDomains = atsConfig[EXCEPTION_DOMAINS_KEY] as Record<string, unknown> | undefined;
 
     // Case 1: NSAllowsArbitraryLoads = true without exception domains
