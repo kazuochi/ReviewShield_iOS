@@ -4,9 +4,17 @@
  * Parses contents.xcworkspacedata to extract project references.
  * This allows us to find the correct project(s) instead of relying
  * on directory heuristics that can pick the wrong project in monorepos.
+ * 
+ * P1/P2 Fix: Now uses product type for scoring instead of name-based heuristics.
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { 
+  getMainTargetProductType, 
+  getProductTypePriority, 
+  isApplicationType,
+  isTestType 
+} from './pbxproj-parser.js';
 
 /**
  * A project reference extracted from workspace data
@@ -20,8 +28,16 @@ export interface WorkspaceProjectRef {
   projectPath: string;
   /** Whether this is a Pods project (dependency, not the main app) */
   isPods: boolean;
-  /** Whether this is a test/example project */
+  /** Whether this is a test/example project (by path heuristics) */
   isTestOrExample: boolean;
+  /** Product type priority score (higher = better candidate for main app) */
+  productTypePriority?: number;
+  /** Main target product type (e.g., "com.apple.product-type.application") */
+  productType?: string;
+  /** Whether the main target is an application (by productType) */
+  isApplication?: boolean;
+  /** Whether the main target is a test target (by productType) */
+  isTestTarget?: boolean;
 }
 
 /**
@@ -200,10 +216,48 @@ export function resolveProjectRef(
 }
 
 /**
+ * Enrich a project reference with product type info by parsing its pbxproj
+ * 
+ * @param ref The project reference
+ * @param resolvedPath The resolved absolute path to the .xcodeproj
+ */
+function enrichProjectRefWithProductType(
+  ref: WorkspaceProjectRef,
+  resolvedPath: string
+): void {
+  const pbxprojPath = path.join(resolvedPath, 'project.pbxproj');
+  
+  if (!fs.existsSync(pbxprojPath)) {
+    return;
+  }
+  
+  try {
+    const content = fs.readFileSync(pbxprojPath, 'utf-8');
+    const projectName = path.basename(resolvedPath).replace('.xcodeproj', '');
+    
+    const productType = getMainTargetProductType(content, projectName);
+    if (productType) {
+      ref.productType = productType;
+      ref.productTypePriority = getProductTypePriority(productType);
+      ref.isApplication = isApplicationType(productType);
+      ref.isTestTarget = isTestType(productType);
+    }
+  } catch {
+    // Ignore parsing errors - fall back to path heuristics
+  }
+}
+
+/**
  * Given a workspace path, returns the main project paths
  * 
  * This is the primary API for discovering projects in a workspace.
  * It parses the workspace data and resolves the main project references.
+ * 
+ * P1/P2 Fix: Now uses product type for scoring, not name heuristics.
+ * Projects are sorted by:
+ * 1. Product type priority (applications first)
+ * 2. Not being Pods
+ * 3. Not being a test target (by productType)
  * 
  * @param workspacePath Path to .xcworkspace directory
  * @returns Array of absolute paths to .xcodeproj directories
@@ -214,19 +268,66 @@ export function getWorkspaceProjects(workspacePath: string): string[] {
     : path.dirname(path.dirname(workspacePath));
   
   const parsed = parseWorkspaceData(workspacePath);
-  const projectPaths: string[] = [];
   
-  // Prefer main projects; fall back to all if none found
-  const refs = parsed.mainProjectRefs.length > 0 
-    ? parsed.mainProjectRefs 
-    : parsed.projectRefs;
+  // Resolve all project paths and enrich with product type
+  const enrichedRefs: Array<{ ref: WorkspaceProjectRef; resolved: string }> = [];
   
-  for (const ref of refs) {
+  for (const ref of parsed.projectRefs) {
     const resolved = resolveProjectRef(ref, workspaceDir);
     if (resolved && fs.existsSync(resolved)) {
-      projectPaths.push(resolved);
+      // Enrich with product type info
+      enrichProjectRefWithProductType(ref, resolved);
+      enrichedRefs.push({ ref, resolved });
     }
   }
   
-  return projectPaths;
+  // Sort by product type priority (P1/P2 fix: use productType, not name)
+  enrichedRefs.sort((a, b) => {
+    // First: exclude Pods (always last)
+    if (a.ref.isPods !== b.ref.isPods) {
+      return a.ref.isPods ? 1 : -1;
+    }
+    
+    // Second: prefer applications by productType (not name heuristics)
+    if (a.ref.isApplication !== b.ref.isApplication) {
+      return a.ref.isApplication ? -1 : 1;
+    }
+    
+    // Third: exclude test targets by productType (more reliable than name)
+    if (a.ref.isTestTarget !== b.ref.isTestTarget) {
+      return a.ref.isTestTarget ? 1 : -1;
+    }
+    
+    // Fourth: sort by product type priority
+    const priorityA = a.ref.productTypePriority ?? 0;
+    const priorityB = b.ref.productTypePriority ?? 0;
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA;
+    }
+    
+    // Fifth: fall back to path heuristics for test/example
+    if (a.ref.isTestOrExample !== b.ref.isTestOrExample) {
+      return a.ref.isTestOrExample ? 1 : -1;
+    }
+    
+    return 0;
+  });
+  
+  // Filter to "main" projects for backward compatibility
+  // Main = application type or (not Pods and not test target)
+  const mainProjects = enrichedRefs.filter(({ ref }) => 
+    ref.isApplication || (!ref.isPods && !ref.isTestTarget && !ref.isTestOrExample)
+  );
+  
+  // If no main projects found, return all non-test projects
+  const resultRefs = mainProjects.length > 0 
+    ? mainProjects 
+    : enrichedRefs.filter(({ ref }) => !ref.isTestTarget);
+  
+  // If still nothing, return all
+  if (resultRefs.length === 0) {
+    return enrichedRefs.map(({ resolved }) => resolved);
+  }
+  
+  return resultRefs.map(({ resolved }) => resolved);
 }
