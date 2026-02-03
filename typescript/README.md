@@ -4,6 +4,18 @@
 
 ReviewShield scans your iOS project for App Store Review Guideline violations and tells you exactly how to fix them.
 
+## Installation
+
+```bash
+npm install -g reviewshield
+```
+
+Or with npx (no install required):
+
+```bash
+npx reviewshield scan ./MyApp.xcodeproj
+```
+
 ## The Problem
 
 App Store rejections cost time and money:
@@ -51,15 +63,44 @@ $ reviewshield scan ./MyApp.xcodeproj
 
 10 rules today, more coming weekly.
 
-## Getting Started
+## Usage
 
-**Coming soon:** ReviewShield GitHub App — automatic PR checks, no setup required.
+```bash
+# Scan an Xcode project
+reviewshield scan ./MyApp.xcodeproj
+
+# Scan a directory
+reviewshield scan ./ios
+
+# Output as JSON
+reviewshield scan ./MyApp.xcodeproj --format json
+```
+
+## Rules (10 and growing)
+
+**Privacy (Guideline 5.1.1)**
+- `missing-camera-purpose` - Camera usage without NSCameraUsageDescription
+- `missing-microphone-purpose` - Microphone usage without NSMicrophoneUsageDescription  
+- `missing-location-purpose` - Location usage without NSLocationUsageDescription
+- `missing-photo-library-purpose` - Photo library usage without NSPhotoLibraryUsageDescription
+- `missing-contacts-purpose` - Contacts usage without NSContactsUsageDescription
+- `location-always-unjustified` - "Always" location without proper justification
+- `att-tracking-mismatch` - ATT framework without NSUserTrackingUsageDescription
+
+**Authentication (Guideline 4.8)**
+- `third-party-login-no-siwa` - Third-party login without Sign in with Apple
+
+**Security (Guideline 2.1)**
+- `ats-exception-without-justification` - App Transport Security exceptions
+
+**Metadata (iOS 17+)**
+- `missing-privacy-manifest` - Missing PrivacyInfo.xcprivacy for required APIs
+
+## Coming Soon
+
+**ReviewShield GitHub App** — automatic PR checks, no setup required.
 
 Join the waitlist: [reviewshield.dev](https://reviewshield.dev)
-
-## For Early Access
-
-Contact us at hello@signal26.dev for beta access.
 
 ---
 

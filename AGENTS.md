@@ -58,3 +58,55 @@ Use conventional commits:
 4. Reviewer agent will review
 5. Address feedback
 6. Merge when approved
+
+---
+
+## Superpowers Skills
+
+We use the [Superpowers](https://github.com/obra/superpowers) methodology for structured development. Skills are at `~/.codex/superpowers/skills/`.
+
+### Core Workflow
+
+**Before coding anything substantial:**
+
+1. **Brainstorming** → Refine spec through questions, validate design in chunks
+   - Read: `~/.codex/superpowers/skills/brainstorming/SKILL.md`
+
+2. **Writing Plans** → Break work into 2-5 min tasks with exact file paths and code
+   - Read: `~/.codex/superpowers/skills/writing-plans/SKILL.md`
+   - Save plans to: `docs/plans/YYYY-MM-DD-<feature>.md`
+
+3. **Subagent-Driven Development** → Fresh agent per task, two-stage review
+   - Read: `~/.codex/superpowers/skills/subagent-driven-development/SKILL.md`
+   - Stage 1: Spec compliance review
+   - Stage 2: Code quality review
+
+### Key Skills Reference
+
+| Skill | When to Use |
+|-------|-------------|
+| `brainstorming` | Starting any new feature |
+| `writing-plans` | Before touching code |
+| `test-driven-development` | RED-GREEN-REFACTOR always |
+| `systematic-debugging` | When fixing bugs |
+| `requesting-code-review` | Before merging |
+| `verification-before-completion` | Before saying "done" |
+
+### TDD Is Mandatory
+
+```
+RED    → Write failing test
+GREEN  → Write minimal code to pass
+REFACTOR → Clean up
+COMMIT → After each green
+```
+
+**Do not write implementation before tests.** The skill will catch you.
+
+### Two-Stage Review
+
+Every completed task gets:
+1. **Spec compliance** — Does it match the plan?
+2. **Code quality** — Is it clean, tested, documented?
+
+Critical issues block progress. This is how we caught the monorepo scope issues.

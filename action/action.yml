@@ -1,0 +1,41 @@
+name: 'ReviewShield'
+description: 'Scan iOS projects for App Store Review Guideline issues before submission'
+author: 'ReviewShield'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to scan (relative to repository root)'
+    required: false
+    default: '.'
+  format:
+    description: 'Output format: text, json, sarif'
+    required: false
+    default: 'text'
+  fail-on-error:
+    description: 'Fail the action if any issues are found'
+    required: false
+    default: 'true'
+  rules:
+    description: 'Comma-separated list of rule IDs to run (empty = all rules)'
+    required: false
+    default: ''
+  exclude:
+    description: 'Comma-separated list of rule IDs to exclude'
+    required: false
+    default: ''
+
+outputs:
+  findings-count:
+    description: 'Number of issues found'
+  sarif-file:
+    description: 'Path to SARIF output file (when format=sarif)'
+  exit-code:
+    description: 'Exit code (0 = clean, 1 = issues found)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

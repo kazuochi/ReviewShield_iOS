@@ -1,7 +1,7 @@
 {
   "name": "reviewshield",
   "version": "0.1.0",
-  "description": "App Store Review Guideline scanner for iOS projects",
+  "description": "Catch App Store rejections before they happen. Scans iOS projects for Review Guideline violations.",
   "main": "dist/index.js",
   "bin": {
     "reviewshield": "./dist/cli/index.js"
@@ -23,10 +23,28 @@
     "review",
     "xcode",
     "lint",
-    "privacy"
+    "privacy",
+    "apple",
+    "swift",
+    "rejection",
+    "guidelines",
+    "app-transport-security",
+    "sign-in-with-apple"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "Signal26 <hello@signal26.dev>",
+  "license": "UNLICENSED",
+  "homepage": "https://reviewshield.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kazuochi/ReviewShield_iOS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kazuochi/ReviewShield_iOS/issues"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },

@@ -1,0 +1,33 @@
+{
+  "name": "@reviewshield/action",
+  "version": "0.1.0",
+  "description": "GitHub Action for ReviewShield - App Store Review Guideline scanner",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "build:watch": "ncc build src/index.ts -o dist --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "github-action",
+    "ios",
+    "app-store",
+    "review",
+    "xcode",
+    "lint"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "reviewshield": "file:../typescript"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@vercel/ncc": "^0.38.1",
+    "typescript": "^5.4.5"
+  }
+}
