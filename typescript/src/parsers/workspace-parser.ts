@@ -154,12 +154,13 @@ function parseLocationString(rawLocation: string): WorkspaceProjectRef {
                  projectPath.includes('/Pods/') ||
                  projectPath.startsWith('Pods/');
   
-  // Detect test/example projects
-  const lowerPath = projectPath.toLowerCase();
-  const isTestOrExample = lowerPath.includes('test') ||
-                          lowerPath.includes('example') ||
-                          lowerPath.includes('demo') ||
-                          lowerPath.includes('sample');
+  // Detect test/example projects by path segments (not substring)
+  // This avoids false positives like "BestApp", "ContestManager", "LatestNews"
+  const pathSegments = projectPath.toLowerCase().split('/');
+  const testKeywords = ['test', 'tests', 'example', 'examples', 'demo', 'demos', 'sample', 'samples'];
+  const isTestOrExample = pathSegments.some(segment => 
+    testKeywords.some(keyword => segment === keyword || segment.endsWith('tests') || segment.endsWith('test'))
+  );
   
   return {
     rawLocation,
