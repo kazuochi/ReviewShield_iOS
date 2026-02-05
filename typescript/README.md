@@ -99,6 +99,8 @@ These rules prevent **ITMS-90683** ("Missing purpose string in Info.plist"). App
 | `missing-location-purpose` | `NSLocationWhenInUseUsageDescription` | App uses CoreLocation without declaring why |
 | `missing-photo-library-purpose` | `NSPhotoLibraryUsageDescription` | App accesses Photos without declaring why |
 | `missing-contacts-purpose` | `NSContactsUsageDescription` | App accesses Contacts without declaring why |
+| `missing-bluetooth-purpose` | `NSBluetoothAlwaysUsageDescription` | App uses CoreBluetooth without declaring why |
+| `missing-face-id-purpose` | `NSFaceIDUsageDescription` | App uses LocalAuthentication (Face ID) without declaring why |
 | `location-always-unjustified` | `NSLocationAlwaysAndWhenInUseUsageDescription` | App requests "Always" location without sufficient justification — almost always rejected per [Guideline 5.1.2](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) |
 
 ### App Tracking Transparency — [Guideline 5.1.2](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing)
@@ -124,6 +126,24 @@ These rules prevent **ITMS-90683** ("Missing purpose string in Info.plist"). App
 | Rule | What It Catches |
 |------|-----------------|
 | `missing-privacy-manifest` | Project uses [required reason APIs](https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api) (UserDefaults, file timestamps, etc.) or third-party SDKs that require a `PrivacyInfo.xcprivacy` file. Enforced by App Store Connect since Spring 2024 via **ITMS-91053**. |
+
+### Export Compliance — [Apple Export Compliance](https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption)
+
+| Rule | Info.plist Key | What It Catches |
+|------|---------------|-----------------|
+| `missing-encryption-flag` | `ITSAppUsesNonExemptEncryption` | Missing export compliance declaration. Without this key, App Store Connect prompts for manual compliance answers on every upload — adding friction and potential delays. Set to `false` if your app only uses HTTPS or standard iOS encryption. |
+
+### Launch Configuration — [Guideline 4.0 (Design)](https://developer.apple.com/app-store/review/guidelines/#design)
+
+| Rule | Info.plist Key | What It Catches |
+|------|---------------|-----------------|
+| `missing-launch-storyboard` | `UILaunchStoryboardName` | Missing launch storyboard. Required since April 2020 for all iOS apps to support all screen sizes. Apps without this key are rejected. |
+
+### App Configuration — [Guideline 4.0 (Design)](https://developer.apple.com/app-store/review/guidelines/#design)
+
+| Rule | Info.plist Key | What It Catches |
+|------|---------------|-----------------|
+| `missing-supported-orientations` | `UISupportedInterfaceOrientations` | Missing interface orientation declaration. Apps should explicitly declare which orientations they support to avoid UI issues on different devices. |
 
 ---
 
