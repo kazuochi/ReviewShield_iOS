@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS App Store Error Codes — ITMS Error Reference — ShipLint</title>
+    <meta name="description" content="Fix common iOS App Store ITMS error codes: ITMS-90683 (missing purpose string), ITMS-91053 (missing privacy manifest), ITMS-90078 (missing export compliance). Step-by-step guides with code samples.">
+    <link rel="canonical" href="https://shiplint.app/errors/">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="iOS App Store Error Codes — ITMS Error Reference — ShipLint">
+    <meta property="og:description" content="Fix the most common iOS App Store ITMS error codes. Step-by-step guides for ITMS-90683, ITMS-91053, ITMS-90078, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shiplint.app/errors/">
+    <meta property="og:site_name" content="ShipLint">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="iOS App Store Error Codes — ShipLint">
+    <meta name="twitter:description" content="Fix the most common iOS App Store ITMS error codes with step-by-step guides.">
+
+    <!-- Schema.org CollectionPage JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "iOS App Store Error Codes — ITMS Error Reference",
+        "description": "A comprehensive reference of common iOS App Store ITMS error codes with step-by-step fix instructions. Covers ITMS-90683, ITMS-91053, ITMS-90078, and more.",
+        "url": "https://shiplint.app/errors/",
+        "publisher": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "hasPart": [
+            {
+                "@type": "TechArticle",
+                "name": "Fix ITMS-90683: Missing Purpose String",
+                "url": "https://shiplint.app/errors/itms-90683.html"
+            },
+            {
+                "@type": "TechArticle",
+                "name": "Fix ITMS-91053: Missing Privacy Manifest",
+                "url": "https://shiplint.app/errors/itms-91053.html"
+            },
+            {
+                "@type": "TechArticle",
+                "name": "Fix ITMS-90078: Missing Export Compliance Key",
+                "url": "https://shiplint.app/errors/itms-90078.html"
+            }
+        ]
+    }
+    </script>
+
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What are ITMS error codes?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ITMS error codes are error identifiers returned by Apple's App Store Connect (formerly iTunes Connect, hence 'ITMS') when an app binary fails validation during upload. Common ITMS errors include ITMS-90683 (missing purpose string), ITMS-91053 (missing privacy manifest), and ITMS-90078 (missing export compliance key). These errors must be resolved before your app can be reviewed."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why does my AI-generated iOS app keep getting rejected?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "AI code generators (Cursor, Copilot, Claude, ChatGPT) produce functionally correct Swift code but frequently miss Apple's platform configuration requirements: privacy manifests (PrivacyInfo.xcprivacy), usage description strings (NS*UsageDescription keys in Info.plist), export compliance declarations, and entitlement files. These are non-code configuration files that AI training data often doesn't cover. ShipLint catches exactly these issues before you submit."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How can I prevent ITMS errors before submitting to the App Store?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Run ShipLint (npx shiplint) in your Xcode project directory before archiving. ShipLint scans your project files — Info.plist, entitlements, privacy manifests, build settings — and reports issues that would cause App Store rejection. It catches ITMS-90683, ITMS-91053, ITMS-90078, and 40+ other common rejection causes in seconds."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: {
+                            900: '#0d0d0f',
+                            800: '#141418',
+                            700: '#1c1c22',
+                            600: '#26262e',
+                            500: '#32323c',
+                        },
+                        accent: {
+                            DEFAULT: '#10b981',
+                            light: '#34d399',
+                            dim: '#065f46',
+                        },
+                        muted: '#9ca3af',
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        a:focus-visible, button:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+        ::selection { background: rgba(16, 185, 129, 0.3); }
+        html { scroll-behavior: smooth; }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 0.375rem;
+            background: #1c1c22;
+            color: #10b981;
+            font-weight: 600;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+        details[open] summary::before {
+            content: '−';
+            background: #10b981;
+            color: #0d0d0f;
+        }
+    </style>
+</head>
+<body class="bg-surface-900 text-gray-200 font-sans antialiased">
+
+    <!-- Nav -->
+    <nav class="border-b border-surface-600 bg-surface-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="https://shiplint.app" class="flex items-center gap-2 text-white font-bold text-lg hover:text-accent transition-colors">
+                <span class="text-accent">$</span> ShipLint
+            </a>
+            <a href="https://shiplint.app" class="text-muted hover:text-white transition-colors text-sm">← Home</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-8 text-sm text-muted">
+            <a href="https://shiplint.app" class="hover:text-accent transition-colors">ShipLint</a>
+            <span class="mx-2">›</span>
+            <span class="text-white">Error Codes</span>
+        </nav>
+
+        <!-- Header -->
+        <header class="mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+                iOS App Store <span class="gradient-text">Error Codes</span>
+            </h1>
+            <p class="text-xl text-muted max-w-2xl mb-6">
+                Your AI builds the code. We help it pass review.
+            </p>
+            <p class="text-gray-300 max-w-2xl leading-relaxed">
+                According to Apple's 2024 data, approximately <strong class="text-white">25% of app submissions are rejected</strong> — and most rejections are preventable configuration issues, not code bugs. Below are the most common ITMS error codes with step-by-step fixes.
+            </p>
+        </header>
+
+        <!-- Error Code Cards -->
+        <section class="mb-16">
+            <div class="space-y-6">
+
+                <!-- ITMS-90683 -->
+                <a href="/errors/itms-90683.html" class="block group">
+                    <div class="bg-surface-800 border border-surface-600 rounded-xl p-6 md:p-8 hover:border-accent/50 transition-all hover:bg-surface-700/50">
+                        <div class="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+                            <div class="shrink-0">
+                                <div class="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-medium tracking-wide uppercase">
+                                    Rejection
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-mono text-accent text-sm mb-1">ITMS-90683</div>
+                                <h2 class="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-accent transition-colors">Missing Purpose String</h2>
+                                <p class="text-gray-300 leading-relaxed mb-3">
+                                    Your app uses a protected API (camera, microphone, location, photos) without the required <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NS*UsageDescription</code> key in Info.plist. Apple's automated validation rejects the binary immediately.
+                                </p>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">Info.plist</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">NSCameraUsageDescription</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">NSLocationWhenInUseUsageDescription</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">Guideline 5.1.1</span>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-accent opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                                →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- ITMS-91053 -->
+                <a href="/errors/itms-91053.html" class="block group">
+                    <div class="bg-surface-800 border border-surface-600 rounded-xl p-6 md:p-8 hover:border-accent/50 transition-all hover:bg-surface-700/50">
+                        <div class="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+                            <div class="shrink-0">
+                                <div class="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-medium tracking-wide uppercase">
+                                    Rejection
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-mono text-accent text-sm mb-1">ITMS-91053</div>
+                                <h2 class="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-accent transition-colors">Missing Privacy Manifest</h2>
+                                <p class="text-gray-300 leading-relaxed mb-3">
+                                    Starting Spring 2024, Apple requires a <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file for apps using Required Reason APIs (UserDefaults, file timestamps, disk space, system boot time). Nearly every app needs one.
+                                </p>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">PrivacyInfo.xcprivacy</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">UserDefaults</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">NSPrivacyAccessedAPITypes</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">Spring 2024</span>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-accent opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                                →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- ITMS-90078 -->
+                <a href="/errors/itms-90078.html" class="block group">
+                    <div class="bg-surface-800 border border-surface-600 rounded-xl p-6 md:p-8 hover:border-accent/50 transition-all hover:bg-surface-700/50">
+                        <div class="flex flex-col md:flex-row md:items-start gap-4 md:gap-6">
+                            <div class="shrink-0">
+                                <div class="inline-block px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-medium tracking-wide uppercase">
+                                    Delay
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-mono text-accent text-sm mb-1">ITMS-90078</div>
+                                <h2 class="text-xl md:text-2xl font-bold text-white mb-2 group-hover:text-accent transition-colors">Missing Export Compliance Key</h2>
+                                <p class="text-gray-300 leading-relaxed mb-3">
+                                    Your app doesn't declare <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code> in Info.plist, so App Store Connect asks export compliance questions on every upload. One key fixes it forever.
+                                </p>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">Info.plist</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">ITSAppUsesNonExemptEncryption</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">Export Compliance</span>
+                                    <span class="px-2 py-1 bg-surface-700 rounded text-muted">CI/CD</span>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-accent opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                                →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- Why These Errors Happen -->
+        <section class="mb-16 bg-surface-800 border border-surface-600 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4">Why AI-Generated Apps Hit These Errors</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                If you're building your iOS app with <strong class="text-white">Cursor, GitHub Copilot, Claude, or ChatGPT</strong>, these errors are almost guaranteed. Here's why:
+            </p>
+            <ul class="space-y-3 text-gray-300">
+                <li class="flex items-start gap-3">
+                    <span class="text-accent mt-1">→</span>
+                    <span>AI code generators write <strong class="text-white">Swift code</strong>, not <strong class="text-white">Xcode configuration</strong>. They import AVFoundation but don't touch Info.plist.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-accent mt-1">→</span>
+                    <span>Privacy manifests (<code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code>) are new — most AI training data predates the Spring 2024 requirement.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-accent mt-1">→</span>
+                    <span>Export compliance is a <strong class="text-white">legal/regulatory</strong> concern, not a coding one. AIs don't think about BIS export regulations.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="text-accent mt-1">→</span>
+                    <span>The code <strong class="text-white">compiles and runs perfectly</strong>. You only discover these issues after submitting to Apple — the worst possible time.</span>
+                </li>
+            </ul>
+        </section>
+
+        <!-- CTA -->
+        <section class="mb-16 text-center bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-2xl p-8 md:p-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">
+                Catch All of These Before Apple Does
+            </h2>
+            <p class="text-muted mb-4 max-w-lg mx-auto">
+                ShipLint scans your Xcode project for 40+ App Store rejection risks in seconds. One command. Zero config. Free.
+            </p>
+            <div class="bg-surface-900 border border-surface-600 rounded-lg px-6 py-4 inline-block font-mono text-lg mb-6">
+                <span class="text-muted">$</span> <span class="text-white">npx shiplint</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="https://shiplint.app" class="inline-block bg-accent hover:bg-accent-light text-surface-900 font-semibold px-8 py-3 rounded-lg transition-colors text-lg">
+                    Learn More →
+                </a>
+                <a href="https://www.npmjs.com/package/shiplint" class="inline-block bg-surface-700 hover:bg-surface-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors text-lg border border-surface-500" target="_blank" rel="noopener">
+                    View on npm
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-3">
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What are ITMS error codes?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        ITMS error codes are identifiers returned by Apple's App Store Connect (formerly iTunes Connect, hence "ITMS" — iTunes Transporter Message Service) when your app binary fails automated validation during upload. They indicate specific configuration, compliance, or binary issues that must be resolved before Apple will review your app.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        How is ShipLint different from Xcode's built-in validation?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Xcode validates your binary at archive time — it catches low-level issues like invalid architectures or missing symbols. ShipLint validates your <em>project configuration</em> at development time — it catches Info.plist issues, missing privacy manifests, entitlement mismatches, and other configuration problems <em>before</em> you even build. ShipLint gives you earlier feedback.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Does ShipLint work with SwiftUI and UIKit?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes. ShipLint scans project files and configuration — it's framework-agnostic. Whether you're using SwiftUI, UIKit, or a mix of both, ShipLint checks the same Info.plist, entitlements, and privacy manifest files.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Can I run ShipLint in CI/CD?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Absolutely. ShipLint runs on macOS, Linux, and Windows via Node.js. Add <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">npx shiplint --ci</code> to your GitHub Actions, Bitrise, or Xcode Cloud pipeline. It exits with a non-zero code if issues are found, so it integrates naturally with CI/CD workflows.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-surface-600 bg-surface-900">
+        <div class="max-w-4xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-muted text-sm">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light font-semibold">ShipLint</a> — Your AI writes the code. We make sure Apple accepts it.
+            </div>
+            <div class="flex gap-6 text-sm text-muted">
+                <a href="https://shiplint.app" class="hover:text-white transition-colors">Home</a>
+                <a href="/errors/" class="hover:text-white transition-colors">Error Codes</a>
+                <a href="https://www.npmjs.com/package/shiplint" class="hover:text-white transition-colors" target="_blank" rel="noopener">npm</a>
+                <a href="https://github.com/nicktesh/ShipLint" class="hover:text-white transition-colors" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

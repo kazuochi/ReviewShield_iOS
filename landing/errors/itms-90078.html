@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix ITMS-90078: Missing Export Compliance Key — ShipLint</title>
+    <meta name="description" content="How to fix ITMS-90078: Missing Export Compliance Key. Add ITSAppUsesNonExemptEncryption to Info.plist to skip export compliance questions on every App Store upload. Step-by-step fix.">
+    <link rel="canonical" href="https://shiplint.app/errors/itms-90078.html">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fix ITMS-90078: Missing Export Compliance Key — ShipLint">
+    <meta property="og:description" content="Step-by-step guide to fix Apple's ITMS-90078 error. Add ITSAppUsesNonExemptEncryption to Info.plist to stop export compliance delays.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://shiplint.app/errors/itms-90078.html">
+    <meta property="og:site_name" content="ShipLint">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fix ITMS-90078: Missing Export Compliance Key — ShipLint">
+    <meta name="twitter:description" content="Step-by-step guide to fix Apple's ITMS-90078 missing export compliance error.">
+
+    <!-- Schema.org TechArticle JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Fix ITMS-90078: Missing Export Compliance Key",
+        "description": "How to fix the ITMS-90078 error when submitting an iOS app to the App Store. This error occurs when your app's Info.plist doesn't declare ITSAppUsesNonExemptEncryption, causing export compliance questions on every upload.",
+        "url": "https://shiplint.app/errors/itms-90078.html",
+        "datePublished": "2025-02-05",
+        "dateModified": "2025-02-05",
+        "author": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "about": {
+            "@type": "Thing",
+            "name": "ITMS-90078",
+            "description": "Apple App Store error code for missing export compliance encryption declaration"
+        },
+        "proficiencyLevel": "Beginner",
+        "dependencies": "Xcode, Info.plist"
+    }
+    </script>
+
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What does ITMS-90078 mean?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ITMS-90078 means your app's Info.plist is missing the ITSAppUsesNonExemptEncryption key. Without this key, App Store Connect will ask you export compliance questions every time you upload a build, which delays your submission and adds manual steps to every release."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I fix ITMS-90078?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Add <key>ITSAppUsesNonExemptEncryption</key><false/> to your Info.plist. If your app only uses standard HTTPS (URLSession, Alamofire) or Apple frameworks (CryptoKit for on-device operations), set it to false. If your app implements custom encryption algorithms or connects to non-standard encrypted protocols, set it to true and you'll need to file for an encryption registration (ERN)."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Does HTTPS count as non-exempt encryption?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. Standard HTTPS (TLS/SSL) used for API calls is considered exempt encryption by the U.S. Bureau of Industry and Security (BIS). If your app only uses URLSession, Alamofire, or other standard networking that communicates over HTTPS, you can safely set ITSAppUsesNonExemptEncryption to false."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "When should I set ITSAppUsesNonExemptEncryption to true?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Set it to true only if your app implements its own encryption algorithms, uses encryption for purposes other than standard HTTPS communication, or includes proprietary encrypted protocols. Examples: custom end-to-end encryption, proprietary DRM, or non-standard VPN protocols. In this case, you may also need to submit an Encryption Registration (ERN) to the BIS."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can ShipLint detect ITMS-90078 before I submit?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. ShipLint checks your Info.plist for the ITSAppUsesNonExemptEncryption key. If it's missing, ShipLint flags it with a clear recommendation. Run 'npx shiplint' in your project directory to catch this before uploading to App Store Connect."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: {
+                            900: '#0d0d0f',
+                            800: '#141418',
+                            700: '#1c1c22',
+                            600: '#26262e',
+                            500: '#32323c',
+                        },
+                        accent: {
+                            DEFAULT: '#10b981',
+                            light: '#34d399',
+                            dim: '#065f46',
+                        },
+                        muted: '#9ca3af',
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        a:focus-visible, button:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+        ::selection { background: rgba(16, 185, 129, 0.3); }
+        html { scroll-behavior: smooth; }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 0.375rem;
+            background: #1c1c22;
+            color: #10b981;
+            font-weight: 600;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        details[open] summary::before {
+            content: '−';
+            background: #10b981;
+            color: #0d0d0f;
+        }
+        pre { overflow-x: auto; }
+    </style>
+</head>
+<body class="bg-surface-900 text-gray-200 font-sans antialiased">
+
+    <!-- Nav -->
+    <nav class="border-b border-surface-600 bg-surface-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="https://shiplint.app" class="flex items-center gap-2 text-white font-bold text-lg hover:text-accent transition-colors">
+                <span class="text-accent">$</span> ShipLint
+            </a>
+            <a href="/errors/" class="text-muted hover:text-white transition-colors text-sm">← All Error Codes</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-8 text-sm text-muted">
+            <a href="https://shiplint.app" class="hover:text-accent transition-colors">ShipLint</a>
+            <span class="mx-2">›</span>
+            <a href="/errors/" class="hover:text-accent transition-colors">Error Codes</a>
+            <span class="mx-2">›</span>
+            <span class="text-white">ITMS-90078</span>
+        </nav>
+
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="inline-block px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-medium tracking-wide uppercase mb-4">
+                Upload Delay
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+                Fix <span class="gradient-text">ITMS-90078</span>:<br>Missing Export Compliance Key
+            </h1>
+            <p class="text-lg text-muted max-w-2xl">
+                Every time you upload a build, App Store Connect asks you about export compliance because your <code class="text-accent">Info.plist</code> is missing <strong class="text-white">ITSAppUsesNonExemptEncryption</strong>. Add one key and never see that dialog again.
+            </p>
+        </header>
+
+        <!-- Quick Answer Box -->
+        <section class="bg-surface-800 border border-surface-600 rounded-xl p-6 mb-12" aria-label="Quick answer">
+            <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <span class="text-accent">⚡</span> Quick Answer
+            </h2>
+            <p class="text-gray-300 leading-relaxed">
+                <strong class="text-white">ITMS-90078: Missing Export Compliance Key</strong> means your app's <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> doesn't declare <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code>. Without this key, App Store Connect prompts you with export compliance questions on <em>every single upload</em>, adding friction and delay to your release process. <strong class="text-white">Fix:</strong> Add <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">&lt;key&gt;ITSAppUsesNonExemptEncryption&lt;/key&gt;&lt;false/&gt;</code> to your Info.plist. If your app only uses HTTPS for networking (which covers 95% of apps), <code class="text-accent">false</code> is the correct value.
+            </p>
+        </section>
+
+        <!-- What Triggers This Error -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">What Triggers ITMS-90078?</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                U.S. export regulations (administered by the <a href="https://www.bis.doc.gov/" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">Bureau of Industry and Security</a>) require apps distributed through the App Store to declare whether they use encryption that goes beyond standard exemptions. Apple implements this via the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code> key in Info.plist.
+            </p>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                If this key is <strong class="text-white">missing</strong>, App Store Connect can't determine your compliance status automatically, so it shows you a manual questionnaire after every upload. This isn't a hard rejection like ITMS-90683, but it's a <strong class="text-white">workflow killer</strong> — especially for teams doing frequent builds or CI/CD deployments.
+            </p>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl p-6">
+                <h3 class="text-sm font-semibold text-white mb-4">Impact Without This Key</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <span class="text-yellow-400 mt-0.5">⚠️</span>
+                        <span class="text-gray-300">Manual export compliance questionnaire on <strong class="text-white">every upload</strong></span>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-yellow-400 mt-0.5">⚠️</span>
+                        <span class="text-gray-300">Delays automated CI/CD pipelines (Fastlane, Xcode Cloud)</span>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-yellow-400 mt-0.5">⚠️</span>
+                        <span class="text-gray-300">TestFlight builds stuck in "Processing" until compliance is answered</span>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-yellow-400 mt-0.5">⚠️</span>
+                        <span class="text-gray-300">Extra friction for each team member who uploads</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step-by-Step Fix -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Step-by-Step Fix</h2>
+
+            <!-- Step 1 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">1</span>
+                    Determine Your Encryption Usage
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Ask yourself: <strong class="text-white">Does your app use encryption beyond standard HTTPS?</strong>
+                </p>
+                <div class="pl-9 grid md:grid-cols-2 gap-4">
+                    <div class="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                        <div class="text-green-400 text-xs font-semibold uppercase tracking-wider mb-3">✅ Set to <code>false</code> if you only use:</div>
+                        <ul class="text-gray-300 text-sm space-y-1.5">
+                            <li>• HTTPS via URLSession or Alamofire</li>
+                            <li>• Apple's CryptoKit for on-device operations</li>
+                            <li>• Standard TLS/SSL for API calls</li>
+                            <li>• App Transport Security (ATS)</li>
+                            <li>• Firebase, AWS SDK, or similar cloud SDKs</li>
+                            <li>• Stripe, RevenueCat, or payment SDKs</li>
+                        </ul>
+                    </div>
+                    <div class="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-4">
+                        <div class="text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-3">⚠️ Set to <code>true</code> if you use:</div>
+                        <ul class="text-gray-300 text-sm space-y-1.5">
+                            <li>• Custom end-to-end encryption</li>
+                            <li>• Proprietary encrypted protocols</li>
+                            <li>• Custom VPN implementations</li>
+                            <li>• Non-standard DRM encryption</li>
+                            <li>• Signal Protocol or similar</li>
+                            <li>• OpenSSL for custom crypto operations</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-sm text-muted mt-4 pl-9">
+                    <strong>For 95%+ of apps</strong>, the answer is <code class="text-accent">false</code>. Standard HTTPS networking is exempt.
+                </p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">2</span>
+                    Add the Key to Info.plist
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Open your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> and add:
+                </p>
+                <div class="bg-surface-900 border border-surface-600 rounded-lg p-4 ml-9 font-mono text-sm overflow-x-auto">
+                    <pre class="text-gray-200"><code>&lt;key&gt;ITSAppUsesNonExemptEncryption&lt;/key&gt;
+&lt;false/&gt;</code></pre>
+                </div>
+                <p class="text-gray-300 mt-4 leading-relaxed pl-9">
+                    In Xcode's plist editor, this appears as <strong>"App Uses Non-Exempt Encryption"</strong> → set to <strong>NO</strong>.
+                </p>
+            </div>
+
+            <!-- Step 3 - Xcode UI method -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">3</span>
+                    Alternative: Add via Xcode UI
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Select your target → <strong>Info</strong> tab → <strong>Custom iOS Target Properties</strong> → click <strong>+</strong> → search for <strong>"App Uses Non-Exempt Encryption"</strong> → set the value to <strong>NO</strong>.
+                </p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">4</span>
+                    Upload Again — No More Questionnaire
+                </h3>
+                <p class="text-gray-300 leading-relaxed pl-9">
+                    Archive and upload your app. App Store Connect will read the key from your binary and <strong class="text-white">skip the export compliance dialog entirely</strong>. Your build will go straight to processing without manual intervention.
+                </p>
+            </div>
+        </section>
+
+        <!-- If You Need true -->
+        <section class="mb-12 bg-surface-800 border border-surface-600 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4">What If You Actually Use Non-Exempt Encryption?</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                If you set <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code> to <code class="text-accent">true</code>, you'll also need to:
+            </p>
+            <ol class="text-gray-300 space-y-3 pl-6 list-decimal">
+                <li>File a <strong class="text-white">SNAP/CCATS classification</strong> or <strong class="text-white">Encryption Registration Number (ERN)</strong> with the U.S. Bureau of Industry and Security (BIS)</li>
+                <li>Send a copy of the classification to Apple via <a href="https://developer.apple.com/contact/" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">Apple Developer Contact</a></li>
+                <li>Add the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSEncryptionExportComplianceCode</code> key to your Info.plist with your compliance document number</li>
+            </ol>
+            <p class="text-gray-300 leading-relaxed mt-4">
+                Most apps — including apps using HTTPS, CryptoKit, or standard cloud SDKs — are <strong class="text-white">exempt</strong> and should use <code class="text-accent">false</code>. See <a href="https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">Apple's documentation</a> for the full policy.
+            </p>
+        </section>
+
+        <!-- Why AI Code Triggers This -->
+        <section class="mb-12 bg-surface-800 border border-surface-600 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4">Why AI-Generated Code Misses This Every Time</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                This is a <strong class="text-white">pure configuration issue</strong> — there's nothing to "code." AI code generators like <strong class="text-white">Cursor, Copilot, and Claude</strong> write your Swift networking layer, set up URLSession, configure Alamofire, integrate Firebase — but they never think to add a compliance key to Info.plist.
+            </p>
+            <p class="text-gray-300 leading-relaxed">
+                It's a one-line fix, but if you don't know it exists, you'll waste time answering the same compliance questionnaire on every single upload. This is the kind of "obvious in hindsight" configuration that separates experienced iOS developers from first-time shippers.
+            </p>
+        </section>
+
+        <!-- How ShipLint Prevents This -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">How ShipLint Prevents ITMS-90078</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light underline">ShipLint</a> checks your Info.plist for the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code> key. If it's missing, ShipLint tells you exactly what to add.
+            </p>
+
+            <div class="bg-surface-900 border border-surface-600 rounded-lg overflow-hidden mb-6">
+                <div class="px-4 py-2 bg-surface-700 border-b border-surface-600 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+                    <span class="text-xs text-muted ml-2 font-mono">Terminal</span>
+                </div>
+                <div class="p-4 font-mono text-sm overflow-x-auto">
+                    <div class="text-muted">$ npx shiplint</div>
+                    <div class="text-gray-200 mt-2">🔍 Scanning MyApp.xcodeproj...</div>
+                    <div class="text-gray-200 mt-1">   Checking Info.plist keys...</div>
+                    <div class="text-yellow-400 mt-2">⚠️ compliance-001: ITSAppUsesNonExemptEncryption missing</div>
+                    <div class="text-gray-400">   → Add to Info.plist to skip export compliance questions on upload.</div>
+                    <div class="text-gray-400">   → If you only use HTTPS: &lt;key&gt;ITSAppUsesNonExemptEncryption&lt;/key&gt;&lt;false/&gt;</div>
+                    <div class="text-gray-200 mt-3">Found <span class="text-yellow-400">1 warning</span> that would delay your App Store submission.</div>
+                </div>
+            </div>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl p-6">
+                <h3 class="text-sm font-semibold text-muted uppercase tracking-wider mb-3">ShipLint Rule</h3>
+                <div class="font-mono text-sm">
+                    <div class="flex gap-3"><span class="text-accent">compliance-001</span><span class="text-gray-400">ITSAppUsesNonExemptEncryption key presence in Info.plist</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="mb-12 text-center bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-2xl p-8 md:p-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">
+                One Command. No More Compliance Dialogs.
+            </h2>
+            <p class="text-muted mb-8 max-w-lg mx-auto">
+                ShipLint catches ITMS-90078 and 40+ other rejection risks before you upload. Zero config. Free.
+            </p>
+            <div class="bg-surface-900 border border-surface-600 rounded-lg px-6 py-4 inline-block font-mono text-lg mb-6">
+                <span class="text-muted">$</span> <span class="text-white">npx shiplint</span>
+            </div>
+            <div>
+                <a href="https://shiplint.app" class="inline-block bg-accent hover:bg-accent-light text-surface-900 font-semibold px-8 py-3 rounded-lg transition-colors text-lg">
+                    Learn More →
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-3">
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Does using HTTPS count as "non-exempt encryption"?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        No. Standard HTTPS via <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">URLSession</code>, <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Alamofire</code>, or any standard HTTP library is <strong>exempt</strong> under U.S. export regulations (BIS EAR §740.17). Set <code class="text-accent">ITSAppUsesNonExemptEncryption</code> to <code class="text-accent">false</code>.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What about Firebase, AWS, or other cloud SDKs?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Cloud SDKs like Firebase, AWS Amplify, and Supabase use standard HTTPS for their network communication. These are exempt. You can safely set the key to <code class="text-accent">false</code> when using these SDKs for standard features (auth, database, storage, analytics).
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What about CryptoKit or CommonCrypto?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        If you use <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">CryptoKit</code> or <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">CommonCrypto</code> for on-device operations (hashing, signing, local encryption), these are generally considered exempt as they use Apple's built-in encryption. However, if you're using them to implement a custom encrypted communication protocol, you may need to set the key to <code class="text-accent">true</code>.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Will this fix work for Fastlane / CI/CD uploads too?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes. When the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">ITSAppUsesNonExemptEncryption</code> key is in your Info.plist, both <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">xcrun altool</code> and Fastlane's <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">deliver</code> / <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">pilot</code> will skip the compliance prompt. This is essential for fully automated deployment pipelines.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Is this the same as the "Export Compliance" checkbox in App Store Connect?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes — the Info.plist key is the <em>binary-level</em> declaration that replaces the manual checkbox in App Store Connect. When the key is present, App Store Connect reads it automatically and skips the dialog. It's the same declaration, just embedded in your app binary instead of answered manually.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Related Errors -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Related Error Codes</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <a href="/errors/itms-90683.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-90683</div>
+                    <div class="text-white font-semibold">Missing Purpose String</div>
+                    <div class="text-muted text-sm mt-1">NS*UsageDescription key not found in Info.plist</div>
+                </a>
+                <a href="/errors/itms-91053.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-91053</div>
+                    <div class="text-white font-semibold">Missing Privacy Manifest</div>
+                    <div class="text-muted text-sm mt-1">PrivacyInfo.xcprivacy file required for Required Reason APIs</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Apple Reference -->
+        <section class="mb-12 border-t border-surface-600 pt-8">
+            <h2 class="text-lg font-semibold text-white mb-4">Apple Documentation References</h2>
+            <ul class="space-y-2 text-sm">
+                <li>
+                    <a href="https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        ITSAppUsesNonExemptEncryption — Information Property List
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/help/app-store-connect/reference/export-compliance-documentation-for-encryption" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Export Compliance Documentation for Encryption
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/documentation/security/complying_with_encryption_export_regulations" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Complying with Encryption Export Regulations
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-surface-600 bg-surface-900">
+        <div class="max-w-4xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-muted text-sm">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light font-semibold">ShipLint</a> — Your AI writes the code. We make sure Apple accepts it.
+            </div>
+            <div class="flex gap-6 text-sm text-muted">
+                <a href="https://shiplint.app" class="hover:text-white transition-colors">Home</a>
+                <a href="/errors/" class="hover:text-white transition-colors">Error Codes</a>
+                <a href="https://www.npmjs.com/package/shiplint" class="hover:text-white transition-colors" target="_blank" rel="noopener">npm</a>
+                <a href="https://github.com/nicktesh/ShipLint" class="hover:text-white transition-colors" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
