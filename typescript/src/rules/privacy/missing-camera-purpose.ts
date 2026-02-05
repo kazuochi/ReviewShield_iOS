@@ -11,7 +11,11 @@ import { Severity, Confidence, RuleCategory } from '../../types/index.js';
 import { isPlaceholder } from '../../parsers/plist-parser.js';
 import { makeFinding } from '../base.js';
 
-const CAMERA_FRAMEWORKS = ['AVFoundation', 'AVKit', 'VisionKit'];
+// Note: VisionKit is NOT included here because it's often used for ImageAnalyzer
+// (Live Text on existing images) which doesn't require camera access. Only
+// DataScannerViewController and VNDocumentCameraViewController in VisionKit
+// require camera permission, and detecting those requires deeper source analysis.
+const CAMERA_FRAMEWORKS = ['AVFoundation', 'AVKit'];
 
 export const MissingCameraPurposeRule: Rule = {
   id: 'privacy-001-missing-camera-purpose',

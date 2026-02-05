@@ -90,7 +90,7 @@ describe('MissingCameraPurposeRule', () => {
     expect(findings).toEqual([]);
   });
 
-  it('should detect AVKit and VisionKit as camera frameworks', async () => {
+  it('should detect AVKit as camera framework', async () => {
     const contextAVKit = createContextObject(
       '/test/project',
       { CFBundleIdentifier: 'com.example.app' },
@@ -99,6 +99,15 @@ describe('MissingCameraPurposeRule', () => {
       []
     );
 
+    const findingsAVKit = await MissingCameraPurposeRule.evaluate(contextAVKit);
+    
+    expect(findingsAVKit).toHaveLength(1);
+  });
+
+  it('should NOT flag VisionKit alone (ImageAnalyzer does not require camera)', async () => {
+    // VisionKit is used for Live Text (ImageAnalyzer) which doesn't need camera.
+    // Only DataScannerViewController requires camera, but detecting that needs
+    // deeper source analysis. Conservative approach: don't flag VisionKit alone.
     const contextVisionKit = createContextObject(
       '/test/project',
       { CFBundleIdentifier: 'com.example.app' },
@@ -107,10 +116,8 @@ describe('MissingCameraPurposeRule', () => {
       []
     );
 
-    const findingsAVKit = await MissingCameraPurposeRule.evaluate(contextAVKit);
     const findingsVisionKit = await MissingCameraPurposeRule.evaluate(contextVisionKit);
     
-    expect(findingsAVKit).toHaveLength(1);
-    expect(findingsVisionKit).toHaveLength(1);
+    expect(findingsVisionKit).toHaveLength(0);
   });
 });
