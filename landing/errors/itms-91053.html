@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix ITMS-91053: Missing Privacy Manifest — ShipLint</title>
+    <meta name="description" content="How to fix ITMS-91053: Missing Privacy Manifest. Apple requires PrivacyInfo.xcprivacy for apps using Required Reason APIs (UserDefaults, file timestamps, disk space). Step-by-step fix with code.">
+    <link rel="canonical" href="https://shiplint.app/errors/itms-91053.html">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fix ITMS-91053: Missing Privacy Manifest — ShipLint">
+    <meta property="og:description" content="Step-by-step guide to fix Apple's ITMS-91053 error. Create the required PrivacyInfo.xcprivacy file with correct NSPrivacyAccessedAPITypes.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://shiplint.app/errors/itms-91053.html">
+    <meta property="og:site_name" content="ShipLint">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fix ITMS-91053: Missing Privacy Manifest — ShipLint">
+    <meta name="twitter:description" content="Step-by-step guide to fix Apple's ITMS-91053 missing privacy manifest error.">
+
+    <!-- Schema.org TechArticle JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Fix ITMS-91053: Missing Privacy Manifest",
+        "description": "How to fix the ITMS-91053 error when submitting an iOS app to the App Store. This error occurs when your app uses Required Reason APIs without a PrivacyInfo.xcprivacy manifest file.",
+        "url": "https://shiplint.app/errors/itms-91053.html",
+        "datePublished": "2025-02-05",
+        "dateModified": "2025-02-05",
+        "author": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "about": {
+            "@type": "Thing",
+            "name": "ITMS-91053",
+            "description": "Apple App Store error code for missing privacy manifest file (PrivacyInfo.xcprivacy)"
+        },
+        "proficiencyLevel": "Beginner",
+        "dependencies": "Xcode, PrivacyInfo.xcprivacy"
+    }
+    </script>
+
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What does ITMS-91053 mean?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ITMS-91053 means your iOS app uses one or more Required Reason APIs (such as UserDefaults, file system timestamps, disk space checks, or system boot time) but does not include a PrivacyInfo.xcprivacy privacy manifest file declaring why it uses those APIs. Apple began requiring this starting Spring 2024."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I fix ITMS-91053?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "To fix ITMS-91053: 1) Create a PrivacyInfo.xcprivacy file in your Xcode project. 2) Add NSPrivacyAccessedAPITypes with entries for each Required Reason API your app uses. 3) For each API, specify the NSPrivacyAccessedAPIType (category) and NSPrivacyAccessedAPITypeReasons (an array of reason codes). 4) Rebuild and resubmit your app."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What are Required Reason APIs?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Required Reason APIs are Apple APIs that can be used for fingerprinting. Starting Spring 2024, Apple requires apps to declare why they use these APIs in a privacy manifest. Categories include: File timestamp APIs (NSFileCreationDate, NSFileModificationDate), System boot time APIs (systemUptime), Disk space APIs (volumeAvailableCapacity), User defaults APIs (UserDefaults), and Active keyboard APIs."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Do I need a privacy manifest for UserDefaults?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. As of Spring 2024, UserDefaults is classified as a Required Reason API. If your app or any of its dependencies use UserDefaults, you must include a PrivacyInfo.xcprivacy file with NSPrivacyAccessedAPIType set to NSPrivacyAccessedAPICategoryUserDefaults and a valid reason code such as CA92.1 (app functionality) or 1C8F.1 (accessing user defaults in the app's container)."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can ShipLint detect ITMS-91053 before I submit?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. ShipLint's metadata-001 rule checks for the presence and correctness of your PrivacyInfo.xcprivacy file. Run 'npx shiplint' in your project directory to catch this before submitting to App Store Connect."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: {
+                            900: '#0d0d0f',
+                            800: '#141418',
+                            700: '#1c1c22',
+                            600: '#26262e',
+                            500: '#32323c',
+                        },
+                        accent: {
+                            DEFAULT: '#10b981',
+                            light: '#34d399',
+                            dim: '#065f46',
+                        },
+                        muted: '#9ca3af',
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        a:focus-visible, button:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+        ::selection { background: rgba(16, 185, 129, 0.3); }
+        html { scroll-behavior: smooth; }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 0.375rem;
+            background: #1c1c22;
+            color: #10b981;
+            font-weight: 600;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        details[open] summary::before {
+            content: '−';
+            background: #10b981;
+            color: #0d0d0f;
+        }
+        pre { overflow-x: auto; }
+    </style>
+</head>
+<body class="bg-surface-900 text-gray-200 font-sans antialiased">
+
+    <!-- Nav -->
+    <nav class="border-b border-surface-600 bg-surface-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="https://shiplint.app" class="flex items-center gap-2 text-white font-bold text-lg hover:text-accent transition-colors">
+                <span class="text-accent">$</span> ShipLint
+            </a>
+            <a href="/errors/" class="text-muted hover:text-white transition-colors text-sm">← All Error Codes</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-8 text-sm text-muted">
+            <a href="https://shiplint.app" class="hover:text-accent transition-colors">ShipLint</a>
+            <span class="mx-2">›</span>
+            <a href="/errors/" class="hover:text-accent transition-colors">Error Codes</a>
+            <span class="mx-2">›</span>
+            <span class="text-white">ITMS-91053</span>
+        </nav>
+
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-medium tracking-wide uppercase mb-4">
+                App Store Rejection
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+                Fix <span class="gradient-text">ITMS-91053</span>:<br>Missing Privacy Manifest
+            </h1>
+            <p class="text-lg text-muted max-w-2xl">
+                Apple rejected your app because it uses <strong class="text-white">Required Reason APIs</strong> — such as UserDefaults, file timestamps, or disk space — without a <strong class="text-white">PrivacyInfo.xcprivacy</strong> privacy manifest. This requirement went into effect <strong class="text-white">Spring 2024</strong>. Here's how to create the file and fix this error.
+            </p>
+        </header>
+
+        <!-- Quick Answer Box -->
+        <section class="bg-surface-800 border border-surface-600 rounded-xl p-6 mb-12" aria-label="Quick answer">
+            <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <span class="text-accent">⚡</span> Quick Answer
+            </h2>
+            <p class="text-gray-300 leading-relaxed">
+                <strong class="text-white">ITMS-91053: Missing Privacy Manifest</strong> means your app uses APIs that Apple classifies as "Required Reason APIs" (UserDefaults, NSFileCreationDate, systemUptime, volumeAvailableCapacity, etc.) but doesn't include a <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file declaring <em>why</em> it uses them. <strong class="text-white">Fix:</strong> Create a <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file in your Xcode project with the correct <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NSPrivacyAccessedAPITypes</code> entries, specifying a valid reason code for each API category your app uses.
+            </p>
+        </section>
+
+        <!-- What Triggers This Error -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">What Triggers ITMS-91053?</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                Starting in Spring 2024, Apple requires all apps and third-party SDKs to include a <strong class="text-white">privacy manifest</strong> (<code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code>) if they use any APIs that could be used for device fingerprinting. Apple calls these <a href="https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">"Required Reason APIs"</a>.
+            </p>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                Nearly <strong class="text-white">every iOS app</strong> uses at least one of these APIs — most commonly <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">UserDefaults</code> — making ITMS-91053 one of the most frequently encountered App Store rejections since mid-2024. According to Apple's data, approximately <strong class="text-white">25% of app submissions are rejected</strong>, and missing privacy manifests are a leading cause.
+            </p>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl overflow-hidden">
+                <div class="px-6 py-3 bg-surface-700 border-b border-surface-600">
+                    <h3 class="text-sm font-semibold text-white">Required Reason API Categories</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0 w-6 text-center">📁</span>
+                        <div>
+                            <code class="text-white text-sm font-mono">NSPrivacyAccessedAPICategoryFileTimestamp</code>
+                            <div class="text-muted text-sm mt-1">File creation/modification dates — <code class="text-gray-400">NSFileCreationDate</code>, <code class="text-gray-400">NSFileModificationDate</code>, <code class="text-gray-400">creationDate</code>, <code class="text-gray-400">modificationDate</code></div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0 w-6 text-center">⏱️</span>
+                        <div>
+                            <code class="text-white text-sm font-mono">NSPrivacyAccessedAPICategorySystemBootTime</code>
+                            <div class="text-muted text-sm mt-1">System boot time — <code class="text-gray-400">systemUptime</code>, <code class="text-gray-400">mach_absolute_time()</code></div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0 w-6 text-center">💾</span>
+                        <div>
+                            <code class="text-white text-sm font-mono">NSPrivacyAccessedAPICategoryDiskSpace</code>
+                            <div class="text-muted text-sm mt-1">Disk space — <code class="text-gray-400">volumeAvailableCapacity</code>, <code class="text-gray-400">volumeAvailableCapacityForImportantUsage</code></div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0 w-6 text-center">⚙️</span>
+                        <div>
+                            <code class="text-white text-sm font-mono">NSPrivacyAccessedAPICategoryUserDefaults</code>
+                            <div class="text-muted text-sm mt-1">User defaults — <code class="text-gray-400">UserDefaults</code>, <code class="text-gray-400">NSUserDefaults</code></div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0 w-6 text-center">⌨️</span>
+                        <div>
+                            <code class="text-white text-sm font-mono">NSPrivacyAccessedAPICategoryActiveKeyboards</code>
+                            <div class="text-muted text-sm mt-1">Active keyboard list — <code class="text-gray-400">activeInputModes</code></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step-by-Step Fix -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Step-by-Step Fix</h2>
+
+            <!-- Step 1 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">1</span>
+                    Create PrivacyInfo.xcprivacy in Xcode
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    In Xcode: <strong>File → New → File</strong> → search for <strong>"App Privacy"</strong> → select <strong>App Privacy</strong> file type. This creates a <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file in your project.
+                </p>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Alternatively, create the file manually. It's a standard property list (XML) file:
+                </p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">2</span>
+                    Add Your Required Reason API Declarations
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Here's a complete example <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> for a typical app that uses UserDefaults and file timestamps:
+                </p>
+                <div class="bg-surface-900 border border-surface-600 rounded-lg p-4 ml-9 font-mono text-sm overflow-x-auto">
+                    <pre class="text-gray-200"><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+  &lt;key&gt;NSPrivacyAccessedAPITypes&lt;/key&gt;
+  &lt;array&gt;
+
+    &lt;!-- UserDefaults --&gt;
+    &lt;dict&gt;
+      &lt;key&gt;NSPrivacyAccessedAPIType&lt;/key&gt;
+      &lt;string&gt;NSPrivacyAccessedAPICategoryUserDefaults&lt;/string&gt;
+      &lt;key&gt;NSPrivacyAccessedAPITypeReasons&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;CA92.1&lt;/string&gt;
+      &lt;/array&gt;
+    &lt;/dict&gt;
+
+    &lt;!-- File Timestamp --&gt;
+    &lt;dict&gt;
+      &lt;key&gt;NSPrivacyAccessedAPIType&lt;/key&gt;
+      &lt;string&gt;NSPrivacyAccessedAPICategoryFileTimestamp&lt;/string&gt;
+      &lt;key&gt;NSPrivacyAccessedAPITypeReasons&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;C617.1&lt;/string&gt;
+      &lt;/array&gt;
+    &lt;/dict&gt;
+
+  &lt;/array&gt;
+
+  &lt;key&gt;NSPrivacyCollectedDataTypes&lt;/key&gt;
+  &lt;array/&gt;
+
+  &lt;key&gt;NSPrivacyTracking&lt;/key&gt;
+  &lt;false/&gt;
+
+  &lt;key&gt;NSPrivacyTrackingDomains&lt;/key&gt;
+  &lt;array/&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">3</span>
+                    Choose the Correct Reason Codes
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Each API category has specific reason codes. You must use the code that accurately describes your usage. Here are the most common ones:
+                </p>
+                <div class="ml-9 bg-surface-800 border border-surface-600 rounded-xl overflow-hidden">
+                    <div class="divide-y divide-surface-600">
+                        <div class="p-4">
+                            <div class="text-white font-mono text-sm font-semibold">UserDefaults</div>
+                            <div class="mt-2 space-y-1 text-sm">
+                                <div><code class="text-accent">CA92.1</code> <span class="text-muted">— Read/write to app's own UserDefaults (most common)</span></div>
+                                <div><code class="text-accent">1C8F.1</code> <span class="text-muted">— Access UserDefaults via container identifier</span></div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="text-white font-mono text-sm font-semibold">File Timestamp</div>
+                            <div class="mt-2 space-y-1 text-sm">
+                                <div><code class="text-accent">C617.1</code> <span class="text-muted">— Access file timestamps inside the app container</span></div>
+                                <div><code class="text-accent">DDA9.1</code> <span class="text-muted">— Display file timestamps to the user</span></div>
+                                <div><code class="text-accent">3B52.1</code> <span class="text-muted">— Access timestamps of files user explicitly granted access to</span></div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="text-white font-mono text-sm font-semibold">Disk Space</div>
+                            <div class="mt-2 space-y-1 text-sm">
+                                <div><code class="text-accent">E174.1</code> <span class="text-muted">— Check if there's enough disk space to write files</span></div>
+                                <div><code class="text-accent">85F4.1</code> <span class="text-muted">— Display disk space information to the user</span></div>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div class="text-white font-mono text-sm font-semibold">System Boot Time</div>
+                            <div class="mt-2 space-y-1 text-sm">
+                                <div><code class="text-accent">35F9.1</code> <span class="text-muted">— Measure elapsed time between events</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-sm text-muted mt-4 pl-9">
+                    Full list: <a href="https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">Apple Documentation — Required Reason API</a>
+                </p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">4</span>
+                    Ensure the File Is Included in Your Target
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    In Xcode, select your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file and verify it's included in your app target's <strong>Target Membership</strong> in the File Inspector (right panel). If it's not included in the build, Apple won't see it.
+                </p>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">5</span>
+                    Don't Forget Third-Party SDKs
+                </h3>
+                <p class="text-gray-300 leading-relaxed pl-9">
+                    Third-party SDKs that use Required Reason APIs must include their <em>own</em> privacy manifest. If you're using popular SDKs (Firebase, Alamofire, etc.), update them to versions that include <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code>. Check each SDK's release notes or GitHub for privacy manifest updates.
+                </p>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">6</span>
+                    Rebuild and Resubmit
+                </h3>
+                <p class="text-gray-300 leading-relaxed pl-9">
+                    Archive your app again (<code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Product → Archive</code>) and upload to App Store Connect. The ITMS-91053 error should be resolved.
+                </p>
+            </div>
+        </section>
+
+        <!-- Why AI Code Triggers This -->
+        <section class="mb-12 bg-surface-800 border border-surface-600 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4">Why AI-Generated Code Almost Always Triggers ITMS-91053</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                If you're using <strong class="text-white">Cursor, GitHub Copilot, Claude, or ChatGPT</strong> to build your iOS app, you will almost certainly hit this error. Why? Because <em>every</em> app that calls <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">UserDefaults.standard</code> now needs a privacy manifest — and AI code generators freely use UserDefaults for settings, preferences, onboarding state, and cached values.
+            </p>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                The privacy manifest requirement is new (Spring 2024), so AI training data mostly predates it. The AI doesn't know it needs to create this file. Your code compiles, tests pass, the app runs beautifully — and then Apple rejects it because a configuration file is missing.
+            </p>
+            <p class="text-gray-300 leading-relaxed">
+                This is exactly the kind of "non-code" issue that <a href="https://shiplint.app" class="text-accent hover:text-accent-light underline">ShipLint</a> was built to catch.
+            </p>
+        </section>
+
+        <!-- How ShipLint Prevents This -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">How ShipLint Prevents ITMS-91053</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light underline">ShipLint</a> checks for the existence and correctness of your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> file. It scans your code for Required Reason API usage and verifies the manifest declares matching reason codes.
+            </p>
+
+            <div class="bg-surface-900 border border-surface-600 rounded-lg overflow-hidden mb-6">
+                <div class="px-4 py-2 bg-surface-700 border-b border-surface-600 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+                    <span class="text-xs text-muted ml-2 font-mono">Terminal</span>
+                </div>
+                <div class="p-4 font-mono text-sm overflow-x-auto">
+                    <div class="text-muted">$ npx shiplint</div>
+                    <div class="text-gray-200 mt-2">🔍 Scanning MyApp.xcodeproj...</div>
+                    <div class="text-gray-200 mt-1">   Checking privacy manifest...</div>
+                    <div class="text-red-400 mt-2">❌ metadata-001: PrivacyInfo.xcprivacy missing</div>
+                    <div class="text-gray-400">   → Your app uses UserDefaults but has no privacy manifest.</div>
+                    <div class="text-gray-400">   → Create PrivacyInfo.xcprivacy with NSPrivacyAccessedAPICategoryUserDefaults</div>
+                    <div class="text-gray-400">   → Reason code: CA92.1 (app-specific UserDefaults access)</div>
+                    <div class="text-gray-200 mt-3">Found <span class="text-red-400">1 issue</span> that would cause App Store rejection.</div>
+                </div>
+            </div>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl p-6">
+                <h3 class="text-sm font-semibold text-muted uppercase tracking-wider mb-3">ShipLint Rule</h3>
+                <div class="font-mono text-sm">
+                    <div class="flex gap-3"><span class="text-accent">metadata-001</span><span class="text-gray-400">PrivacyInfo.xcprivacy existence and Required Reason API coverage</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="mb-12 text-center bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-2xl p-8 md:p-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">
+                Catch Privacy Manifest Issues Before Apple Does
+            </h2>
+            <p class="text-muted mb-8 max-w-lg mx-auto">
+                ShipLint detects ITMS-91053 and 40+ other rejection risks in seconds. One command. Zero config. Free.
+            </p>
+            <div class="bg-surface-900 border border-surface-600 rounded-lg px-6 py-4 inline-block font-mono text-lg mb-6">
+                <span class="text-muted">$</span> <span class="text-white">npx shiplint</span>
+            </div>
+            <div>
+                <a href="https://shiplint.app" class="inline-block bg-accent hover:bg-accent-light text-surface-900 font-semibold px-8 py-3 rounded-lg transition-colors text-lg">
+                    Learn More →
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-3">
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Do I need a privacy manifest if I only use UserDefaults for a simple boolean flag?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes. Any use of <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">UserDefaults</code> — even a single <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">UserDefaults.standard.bool(forKey:)</code> call — requires a privacy manifest entry. Use reason code <code class="text-accent">CA92.1</code> (accessing app-specific data).
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What if a third-party SDK triggers ITMS-91053?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Third-party SDKs should ship their own <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PrivacyInfo.xcprivacy</code> inside their framework bundle. Update to the latest version of the SDK — most popular SDKs (Firebase, Alamofire, Realm, etc.) added privacy manifests in late 2023/early 2024. If the SDK hasn't updated, file an issue on their repository or consider alternative SDKs.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Can I put the privacy manifest in the wrong place?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes — the file must be at the root of your app bundle. In Xcode, it should be a member of your main app target (not a test target or extension). Make sure <strong>Target Membership</strong> includes your app target. For frameworks, it goes inside the framework bundle.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        When did Apple start enforcing privacy manifests?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Apple began enforcing privacy manifests in <strong>Spring 2024</strong> (starting with apps submitted from March 13, 2024). The requirement was announced at WWDC 2023 and applies to all apps, not just new submissions. If you submitted your app before this date and are now updating it, you'll need to add the manifest.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What happens if I pick the wrong reason code?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Apple's automated checks verify that you've declared <em>a</em> reason, but during review, a human reviewer may check that the declared reason matches your actual usage. Pick the reason code that most accurately describes your use case. If multiple reasons apply, include all of them in the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NSPrivacyAccessedAPITypeReasons</code> array.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Related Errors -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Related Error Codes</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <a href="/errors/itms-90683.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-90683</div>
+                    <div class="text-white font-semibold">Missing Purpose String</div>
+                    <div class="text-muted text-sm mt-1">NS*UsageDescription key not found in Info.plist</div>
+                </a>
+                <a href="/errors/itms-90078.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-90078</div>
+                    <div class="text-white font-semibold">Missing Export Compliance</div>
+                    <div class="text-muted text-sm mt-1">ITSAppUsesNonExemptEncryption key not declared</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Apple Reference -->
+        <section class="mb-12 border-t border-surface-600 pt-8">
+            <h2 class="text-lg font-semibold text-white mb-4">Apple Documentation References</h2>
+            <ul class="space-y-2 text-sm">
+                <li>
+                    <a href="https://developer.apple.com/documentation/bundleresources/privacy_manifest_files" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Privacy Manifest Files
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Describing Use of Required Reason API
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/support/third-party-SDK-requirements/" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Third-Party SDK Requirements
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/videos/play/wwdc2023/10060/" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        WWDC 2023 — Get Started with Privacy Manifests
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-surface-600 bg-surface-900">
+        <div class="max-w-4xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-muted text-sm">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light font-semibold">ShipLint</a> — Your AI writes the code. We make sure Apple accepts it.
+            </div>
+            <div class="flex gap-6 text-sm text-muted">
+                <a href="https://shiplint.app" class="hover:text-white transition-colors">Home</a>
+                <a href="/errors/" class="hover:text-white transition-colors">Error Codes</a>
+                <a href="https://www.npmjs.com/package/shiplint" class="hover:text-white transition-colors" target="_blank" rel="noopener">npm</a>
+                <a href="https://github.com/nicktesh/ShipLint" class="hover:text-white transition-colors" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix ITMS-90683: Missing Purpose String — ShipLint</title>
+    <meta name="description" content="How to fix ITMS-90683: Missing Purpose String. Your iOS app uses a protected API (camera, location, photos) without the required NSUsageDescription key in Info.plist. Step-by-step fix with code examples.">
+    <link rel="canonical" href="https://shiplint.app/errors/itms-90683.html">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Fix ITMS-90683: Missing Purpose String — ShipLint">
+    <meta property="og:description" content="Step-by-step guide to fix Apple's ITMS-90683 error. Add the missing NS*UsageDescription key to your Info.plist to pass App Store review.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://shiplint.app/errors/itms-90683.html">
+    <meta property="og:site_name" content="ShipLint">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fix ITMS-90683: Missing Purpose String — ShipLint">
+    <meta name="twitter:description" content="Step-by-step guide to fix Apple's ITMS-90683 missing purpose string error.">
+
+    <!-- Schema.org TechArticle JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Fix ITMS-90683: Missing Purpose String",
+        "description": "How to fix the ITMS-90683 error when submitting an iOS app to the App Store. This error occurs when your app uses a protected API without declaring a purpose string (NS*UsageDescription) in Info.plist.",
+        "url": "https://shiplint.app/errors/itms-90683.html",
+        "datePublished": "2025-02-05",
+        "dateModified": "2025-02-05",
+        "author": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "ShipLint",
+            "url": "https://shiplint.app"
+        },
+        "about": {
+            "@type": "Thing",
+            "name": "ITMS-90683",
+            "description": "Apple App Store error code for missing privacy usage description strings"
+        },
+        "proficiencyLevel": "Beginner",
+        "dependencies": "Xcode, Info.plist"
+    }
+    </script>
+
+    <!-- FAQ Schema -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What does ITMS-90683 mean?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ITMS-90683 means your iOS app uses a protected API (such as the camera, microphone, location services, or photo library) but does not include the required NS*UsageDescription key in its Info.plist file. Apple requires a human-readable purpose string explaining why your app needs access to each protected resource."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I fix ITMS-90683?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "To fix ITMS-90683, identify which protected API your app uses, then add the corresponding NS*UsageDescription key to your Info.plist with a clear, user-facing explanation. For example, if your app uses the camera, add NSCameraUsageDescription with a value like 'This app uses the camera to take profile photos.' Then rebuild and resubmit."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Which NS*UsageDescription keys exist?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Common keys include: NSCameraUsageDescription (camera), NSMicrophoneUsageDescription (microphone), NSPhotoLibraryUsageDescription (photo library read), NSPhotoLibraryAddUsageDescription (photo library write), NSLocationWhenInUseUsageDescription (location while using app), NSLocationAlwaysUsageDescription (always-on location), NSContactsUsageDescription (contacts), NSCalendarsUsageDescription (calendars), NSBluetoothAlwaysUsageDescription (Bluetooth), and NSFaceIDUsageDescription (Face ID)."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can ShipLint detect ITMS-90683 before I submit?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes. ShipLint scans your Xcode project for framework imports and API usage, then checks whether the corresponding NS*UsageDescription keys exist in Info.plist. Rules privacy-001 through privacy-007 cover all common protected APIs. Run 'npx shiplint' in your project directory to catch this before submission."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Why does AI-generated code often trigger ITMS-90683?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "AI code generators like Cursor, Copilot, and Claude produce functionally correct Swift code that imports frameworks like AVFoundation or CoreLocation, but they frequently forget to add the corresponding Info.plist usage description keys. The code compiles and runs fine in the simulator, but Apple rejects it during App Store review because the purpose strings are missing."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: {
+                            900: '#0d0d0f',
+                            800: '#141418',
+                            700: '#1c1c22',
+                            600: '#26262e',
+                            500: '#32323c',
+                        },
+                        accent: {
+                            DEFAULT: '#10b981',
+                            light: '#34d399',
+                            dim: '#065f46',
+                        },
+                        muted: '#9ca3af',
+                    },
+                    fontFamily: {
+                        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', 'monospace'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        a:focus-visible, button:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+        ::selection { background: rgba(16, 185, 129, 0.3); }
+        html { scroll-behavior: smooth; }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before {
+            content: '+';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 0.375rem;
+            background: #1c1c22;
+            color: #10b981;
+            font-weight: 600;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        details[open] summary::before {
+            content: '−';
+            background: #10b981;
+            color: #0d0d0f;
+        }
+        pre { overflow-x: auto; }
+    </style>
+</head>
+<body class="bg-surface-900 text-gray-200 font-sans antialiased">
+
+    <!-- Nav -->
+    <nav class="border-b border-surface-600 bg-surface-900/80 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="https://shiplint.app" class="flex items-center gap-2 text-white font-bold text-lg hover:text-accent transition-colors">
+                <span class="text-accent">$</span> ShipLint
+            </a>
+            <a href="/errors/" class="text-muted hover:text-white transition-colors text-sm">← All Error Codes</a>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-8 text-sm text-muted">
+            <a href="https://shiplint.app" class="hover:text-accent transition-colors">ShipLint</a>
+            <span class="mx-2">›</span>
+            <a href="/errors/" class="hover:text-accent transition-colors">Error Codes</a>
+            <span class="mx-2">›</span>
+            <span class="text-white">ITMS-90683</span>
+        </nav>
+
+        <!-- Header -->
+        <header class="mb-12">
+            <div class="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-xs font-medium tracking-wide uppercase mb-4">
+                App Store Rejection
+            </div>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">
+                Fix <span class="gradient-text">ITMS-90683</span>:<br>Missing Purpose String
+            </h1>
+            <p class="text-lg text-muted max-w-2xl">
+                Apple rejected your app because it uses a protected API — such as the camera, microphone, location, or photo library — without declaring a <strong class="text-white">purpose string</strong> (<code class="text-accent">NS*UsageDescription</code>) in <code class="text-accent">Info.plist</code>. Here's how to fix it in under 5 minutes.
+            </p>
+        </header>
+
+        <!-- Quick Answer Box -->
+        <section class="bg-surface-800 border border-surface-600 rounded-xl p-6 mb-12" aria-label="Quick answer">
+            <h2 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <span class="text-accent">⚡</span> Quick Answer
+            </h2>
+            <p class="text-gray-300 leading-relaxed">
+                <strong class="text-white">ITMS-90683: Missing Purpose String</strong> means your app's <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> is missing a required <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NS*UsageDescription</code> key. Apple requires every app that accesses protected user data (camera, microphone, location, contacts, photos, etc.) to include a human-readable string explaining <em>why</em> it needs that access. Without it, Apple automatically rejects your binary. <strong class="text-white">Fix:</strong> Add the missing key to Info.plist with a clear, specific description of why your app uses that resource, then rebuild and resubmit.
+            </p>
+        </section>
+
+        <!-- What Triggers This Error -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">What Triggers ITMS-90683?</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                When you submit your app to App Store Connect, Apple's automated validation scans your binary for framework imports and API calls that access protected user data. If your app links against frameworks like <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">AVFoundation</code>, <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">CoreLocation</code>, or <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Photos</code> but your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> doesn't include the matching usage description key, you'll get ITMS-90683.
+            </p>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                This is one of the most common App Store rejections — according to Apple's <a href="https://developer.apple.com/app-store/review/" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">2024 App Store Transparency Report</a>, approximately <strong class="text-white">25% of app submissions are rejected</strong>, and missing purpose strings are among the top causes.
+            </p>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl overflow-hidden">
+                <div class="px-6 py-3 bg-surface-700 border-b border-surface-600">
+                    <h3 class="text-sm font-semibold text-white">Common Protected APIs and Their Required Keys</h3>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">📷</span>
+                        <div><code class="text-white text-sm font-mono">NSCameraUsageDescription</code> <span class="text-muted text-sm">— Camera access</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">📍</span>
+                        <div><code class="text-white text-sm font-mono">NSLocationWhenInUseUsageDescription</code> <span class="text-muted text-sm">— Location (while using)</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">🎤</span>
+                        <div><code class="text-white text-sm font-mono">NSMicrophoneUsageDescription</code> <span class="text-muted text-sm">— Microphone access</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">🖼️</span>
+                        <div><code class="text-white text-sm font-mono">NSPhotoLibraryUsageDescription</code> <span class="text-muted text-sm">— Photo library (read)</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">💾</span>
+                        <div><code class="text-white text-sm font-mono">NSPhotoLibraryAddUsageDescription</code> <span class="text-muted text-sm">— Photo library (write/save)</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">📍</span>
+                        <div><code class="text-white text-sm font-mono">NSLocationAlwaysUsageDescription</code> <span class="text-muted text-sm">— Location (always)</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">👤</span>
+                        <div><code class="text-white text-sm font-mono">NSContactsUsageDescription</code> <span class="text-muted text-sm">— Contacts access</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">📅</span>
+                        <div><code class="text-white text-sm font-mono">NSCalendarsUsageDescription</code> <span class="text-muted text-sm">— Calendars access</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">📶</span>
+                        <div><code class="text-white text-sm font-mono">NSBluetoothAlwaysUsageDescription</code> <span class="text-muted text-sm">— Bluetooth access</span></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="text-accent font-mono text-sm mt-0.5 shrink-0">🔐</span>
+                        <div><code class="text-white text-sm font-mono">NSFaceIDUsageDescription</code> <span class="text-muted text-sm">— Face ID authentication</span></div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-sm text-muted mt-4">
+                Full list: <a href="https://developer.apple.com/documentation/bundleresources/information_property_list/protected_resources" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">Apple Documentation — Protected Resources</a>
+            </p>
+        </section>
+
+        <!-- Step-by-Step Fix -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Step-by-Step Fix</h2>
+
+            <!-- Step 1 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">1</span>
+                    Identify Which API Your App Uses
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Check the rejection email from Apple — it will specify which purpose string is missing. You can also search your codebase for framework imports:
+                </p>
+                <div class="bg-surface-900 border border-surface-600 rounded-lg p-4 ml-9 font-mono text-sm overflow-x-auto">
+                    <div class="text-muted mb-1"># Search for protected framework imports</div>
+                    <div class="text-gray-200">grep -r "import AVFoundation\|import CoreLocation\|import Photos\|import Contacts\|import EventKit" --include="*.swift" .</div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">2</span>
+                    Add the Key to Info.plist
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Open your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> and add the required key. Here's an example for an app using the camera and photo library:
+                </p>
+                <div class="bg-surface-900 border border-surface-600 rounded-lg p-4 ml-9 font-mono text-sm overflow-x-auto">
+                    <pre class="text-gray-200"><code>&lt;key&gt;NSCameraUsageDescription&lt;/key&gt;
+&lt;string&gt;This app uses the camera to take photos for your profile.&lt;/string&gt;
+
+&lt;key&gt;NSPhotoLibraryUsageDescription&lt;/key&gt;
+&lt;string&gt;This app accesses your photo library to let you choose a profile picture.&lt;/string&gt;
+
+&lt;key&gt;NSMicrophoneUsageDescription&lt;/key&gt;
+&lt;string&gt;This app uses the microphone to record voice messages.&lt;/string&gt;
+
+&lt;key&gt;NSLocationWhenInUseUsageDescription&lt;/key&gt;
+&lt;string&gt;This app uses your location to show nearby results.&lt;/string&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">3</span>
+                    Write a Meaningful Description
+                </h3>
+                <p class="text-gray-300 mb-4 leading-relaxed pl-9">
+                    Apple <a href="https://developer.apple.com/design/human-interface-guidelines/privacy#Requesting-permission" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">explicitly requires</a> that purpose strings be specific and user-friendly. <strong class="text-white">Vague descriptions will also get rejected.</strong>
+                </p>
+                <div class="pl-9 grid md:grid-cols-2 gap-4">
+                    <div class="bg-red-500/5 border border-red-500/20 rounded-lg p-4">
+                        <div class="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">❌ Bad</div>
+                        <code class="text-gray-300 text-sm">"This app needs camera access."</code>
+                    </div>
+                    <div class="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                        <div class="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">✅ Good</div>
+                        <code class="text-gray-300 text-sm">"This app uses the camera to scan QR codes for event check-in."</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-accent/10 text-accent text-sm font-bold">4</span>
+                    Rebuild and Resubmit
+                </h3>
+                <p class="text-gray-300 leading-relaxed pl-9">
+                    After adding the keys, archive your app again in Xcode (<code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Product → Archive</code>) and upload the new build to App Store Connect. The ITMS-90683 error should be resolved.
+                </p>
+            </div>
+        </section>
+
+        <!-- Why AI Code Triggers This -->
+        <section class="mb-12 bg-surface-800 border border-surface-600 rounded-xl p-8">
+            <h2 class="text-2xl font-bold text-white mb-4">Why AI-Generated Code Often Triggers ITMS-90683</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">
+                If you're building your iOS app with <strong class="text-white">Cursor, GitHub Copilot, Claude, or ChatGPT</strong>, you're especially likely to hit this error. AI code generators produce functionally correct Swift code — they'll import <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">AVFoundation</code> and write a perfect camera capture flow — but they <em>don't modify Info.plist</em>.
+            </p>
+            <p class="text-gray-300 leading-relaxed">
+                The code compiles. It runs perfectly in the Simulator. You ship it to TestFlight. And then Apple rejects it because the plist configuration was never updated. This is the gap between "code that works" and "code that ships."
+            </p>
+        </section>
+
+        <!-- How ShipLint Prevents This -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">How ShipLint Prevents ITMS-90683</h2>
+            <p class="text-gray-300 mb-6 leading-relaxed">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light underline">ShipLint</a> scans your Xcode project <em>before</em> you submit. It detects framework imports and API usage, then verifies the corresponding <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NS*UsageDescription</code> keys exist in your Info.plist. If any are missing, it tells you exactly which ones to add.
+            </p>
+
+            <div class="bg-surface-900 border border-surface-600 rounded-lg overflow-hidden mb-6">
+                <div class="px-4 py-2 bg-surface-700 border-b border-surface-600 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+                    <span class="text-xs text-muted ml-2 font-mono">Terminal</span>
+                </div>
+                <div class="p-4 font-mono text-sm overflow-x-auto">
+                    <div class="text-muted">$ npx shiplint</div>
+                    <div class="text-gray-200 mt-2">🔍 Scanning MyApp.xcodeproj...</div>
+                    <div class="text-gray-200 mt-1">   Checking Info.plist keys...</div>
+                    <div class="text-red-400 mt-2">❌ privacy-001: NSCameraUsageDescription missing</div>
+                    <div class="text-gray-400">   → Your app imports AVFoundation but Info.plist has no camera purpose string.</div>
+                    <div class="text-gray-400">   → Add: &lt;key&gt;NSCameraUsageDescription&lt;/key&gt;</div>
+                    <div class="text-red-400 mt-2">❌ privacy-003: NSLocationWhenInUseUsageDescription missing</div>
+                    <div class="text-gray-400">   → Your app imports CoreLocation but Info.plist has no location purpose string.</div>
+                    <div class="text-gray-400">   → Add: &lt;key&gt;NSLocationWhenInUseUsageDescription&lt;/key&gt;</div>
+                    <div class="text-gray-200 mt-3">Found <span class="text-red-400">2 issues</span> that would cause App Store rejection.</div>
+                </div>
+            </div>
+
+            <div class="bg-surface-800 border border-surface-600 rounded-xl p-6">
+                <h3 class="text-sm font-semibold text-muted uppercase tracking-wider mb-3">ShipLint Rules for Purpose Strings</h3>
+                <div class="space-y-2 font-mono text-sm">
+                    <div class="flex gap-3"><span class="text-accent">privacy-001</span><span class="text-gray-400">NSCameraUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-002</span><span class="text-gray-400">NSMicrophoneUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-003</span><span class="text-gray-400">NSLocationWhenInUseUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-004</span><span class="text-gray-400">NSPhotoLibraryUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-005</span><span class="text-gray-400">NSContactsUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-006</span><span class="text-gray-400">NSBluetoothAlwaysUsageDescription</span></div>
+                    <div class="flex gap-3"><span class="text-accent">privacy-007</span><span class="text-gray-400">NSFaceIDUsageDescription</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="mb-12 text-center bg-gradient-to-br from-accent/10 to-accent/5 border border-accent/20 rounded-2xl p-8 md:p-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">
+                Stop Guessing. Scan Before You Ship.
+            </h2>
+            <p class="text-muted mb-8 max-w-lg mx-auto">
+                ShipLint catches ITMS-90683 and 40+ other rejection risks before Apple does. One command. Zero config. Free.
+            </p>
+            <div class="bg-surface-900 border border-surface-600 rounded-lg px-6 py-4 inline-block font-mono text-lg mb-6">
+                <span class="text-muted">$</span> <span class="text-white">npx shiplint</span>
+            </div>
+            <div>
+                <a href="https://shiplint.app" class="inline-block bg-accent hover:bg-accent-light text-surface-900 font-semibold px-8 py-3 rounded-lg transition-colors text-lg">
+                    Learn More →
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-3">
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        What if I don't actually use the camera but still get ITMS-90683?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        This usually means a third-party SDK or dependency links against a framework like AVFoundation. Even if <em>your</em> code doesn't use the camera, the SDK might. Check your <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Podfile</code>, <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Package.swift</code>, or SPM dependencies for frameworks that require protected APIs. You still need to add the usage description key.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Can I use the same purpose string for multiple apps?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Technically yes, but Apple may reject generic descriptions. Each purpose string should describe what <em>this specific app</em> does with that resource. "We need camera access" is not enough — say <em>why</em>: "to scan documents," "to record videos," "to take profile photos," etc.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Does this apply to SwiftUI apps too?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        Yes. SwiftUI and UIKit apps have the same Info.plist requirements. Whether you're using a <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">CameraView</code>, <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">CLLocationManager</code>, or <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">PHPickerViewController</code>, the corresponding purpose string must be present in Info.plist.
+                    </div>
+                </details>
+                <details class="bg-surface-800 border border-surface-600 rounded-xl">
+                    <summary class="px-6 py-4 flex items-center text-white font-medium">
+                        Where do I add the key in Xcode's new plist editor?
+                    </summary>
+                    <div class="px-6 pb-4 pl-12 text-gray-300 leading-relaxed">
+                        In Xcode 15+, select your target → <strong>Info</strong> tab → <strong>Custom iOS Target Properties</strong>. Click the <strong>+</strong> button and search for "Privacy" — you'll see all the <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">NS*UsageDescription</code> keys listed with human-readable names. Select the one you need and enter your purpose string. Alternatively, right-click <code class="text-accent bg-surface-700 px-1.5 py-0.5 rounded text-sm">Info.plist</code> → Open As → Source Code and paste the XML directly.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <!-- Related Errors -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-white mb-6">Related Error Codes</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <a href="/errors/itms-91053.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-91053</div>
+                    <div class="text-white font-semibold">Missing Privacy Manifest</div>
+                    <div class="text-muted text-sm mt-1">PrivacyInfo.xcprivacy file required for Required Reason APIs</div>
+                </a>
+                <a href="/errors/itms-90078.html" class="block bg-surface-800 border border-surface-600 rounded-xl p-6 hover:border-accent/50 transition-colors">
+                    <div class="font-mono text-accent text-sm mb-1">ITMS-90078</div>
+                    <div class="text-white font-semibold">Missing Export Compliance</div>
+                    <div class="text-muted text-sm mt-1">ITSAppUsesNonExemptEncryption key not declared</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Apple Reference -->
+        <section class="mb-12 border-t border-surface-600 pt-8">
+            <h2 class="text-lg font-semibold text-white mb-4">Apple Documentation References</h2>
+            <ul class="space-y-2 text-sm">
+                <li>
+                    <a href="https://developer.apple.com/documentation/bundleresources/information_property_list/protected_resources" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Information Property List — Protected Resources
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        App Store Review Guideline 5.1.1 — Data Collection and Storage
+                    </a>
+                </li>
+                <li>
+                    <a href="https://developer.apple.com/design/human-interface-guidelines/privacy#Requesting-permission" class="text-accent hover:text-accent-light underline" target="_blank" rel="noopener">
+                        Human Interface Guidelines — Requesting Permission
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-surface-600 bg-surface-900">
+        <div class="max-w-4xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-muted text-sm">
+                <a href="https://shiplint.app" class="text-accent hover:text-accent-light font-semibold">ShipLint</a> — Your AI writes the code. We make sure Apple accepts it.
+            </div>
+            <div class="flex gap-6 text-sm text-muted">
+                <a href="https://shiplint.app" class="hover:text-white transition-colors">Home</a>
+                <a href="/errors/" class="hover:text-white transition-colors">Error Codes</a>
+                <a href="https://www.npmjs.com/package/shiplint" class="hover:text-white transition-colors" target="_blank" rel="noopener">npm</a>
+                <a href="https://github.com/nicktesh/ShipLint" class="hover:text-white transition-colors" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

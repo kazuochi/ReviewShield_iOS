@@ -8,3 +8,5 @@ export { ATTTrackingMismatchRule } from './att-tracking-mismatch.js';
 export { MissingPhotoLibraryPurposeRule } from './missing-photo-library-purpose.js';
 export { MissingMicrophonePurposeRule } from './missing-microphone-purpose.js';
 export { MissingContactsPurposeRule } from './missing-contacts-purpose.js';
+export { MissingBluetoothPurposeRule } from './missing-bluetooth-purpose.js';
+export { MissingFaceIdPurposeRule } from './missing-face-id-purpose.js';

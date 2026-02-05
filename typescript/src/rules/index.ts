@@ -29,6 +29,11 @@ import { MissingContactsPurposeRule } from './privacy/missing-contacts-purpose.j
 import { ThirdPartyLoginNoSIWARule } from './auth/third-party-login-no-siwa.js';
 import { MissingPrivacyManifestRule } from './metadata/missing-privacy-manifest.js';
 import { ATSExceptionWithoutJustificationRule } from './config/ats-exception-without-justification.js';
+import { MissingEncryptionFlagRule } from './config/missing-encryption-flag.js';
+import { MissingLaunchStoryboardRule } from './config/missing-launch-storyboard.js';
+import { MissingBluetoothPurposeRule } from './privacy/missing-bluetooth-purpose.js';
+import { MissingFaceIdPurposeRule } from './privacy/missing-face-id-purpose.js';
+import { MissingSupportedOrientationsRule } from './metadata/missing-supported-orientations.js';
 
 /**
  * All available rules
@@ -41,9 +46,14 @@ export const allRules: Rule[] = [
   MissingPhotoLibraryPurposeRule,
   MissingMicrophonePurposeRule,
   MissingContactsPurposeRule,
+  MissingBluetoothPurposeRule,
+  MissingFaceIdPurposeRule,
   ThirdPartyLoginNoSIWARule,
   MissingPrivacyManifestRule,
+  MissingSupportedOrientationsRule,
   ATSExceptionWithoutJustificationRule,
+  MissingEncryptionFlagRule,
+  MissingLaunchStoryboardRule,
 ];
 
 /**

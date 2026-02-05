@@ -2,6 +2,7 @@
 
 🛡️ **Pre-submission linter for iOS apps.** Catches App Store rejection reasons before you upload.
 
+[![CI](https://github.com/Signal26AI/ShipLint/actions/workflows/ci.yml/badge.svg)](https://github.com/Signal26AI/ShipLint/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/shiplint.svg)](https://www.npmjs.com/package/shiplint)
 
 ## What It Does
@@ -12,7 +13,7 @@ ShipLint scans your iOS project files — `Info.plist`, entitlements, `PrivacyIn
 npx shiplint scan ./YourApp
 ```
 
-**10 rules** covering privacy usage descriptions, App Tracking Transparency, Sign in with Apple, App Transport Security, and privacy manifests. Maps each issue to the specific [Apple guideline](https://developer.apple.com/app-store/review/guidelines/) and ITMS error code.
+**15 rules** covering privacy usage descriptions, App Tracking Transparency, Sign in with Apple, App Transport Security, privacy manifests, export compliance, and launch configuration. Maps each issue to the specific [Apple guideline](https://developer.apple.com/app-store/review/guidelines/) and ITMS error code.
 
 ## Documentation
 
