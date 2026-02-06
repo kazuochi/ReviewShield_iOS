@@ -9,13 +9,14 @@ import { scan } from '../core/scanner.js';
 import { format } from '../formatters/index.js';
 import { allRules } from '../rules/index.js';
 import { OutputFormat } from '../types/index.js';
+import packageJson from '../../package.json';
 
 const program = new Command();
 
 program
   .name('shiplint')
   .description('App Store Review Guideline scanner for iOS projects')
-  .version('0.1.0');
+  .version(packageJson.version);
 
 program
   .command('scan')

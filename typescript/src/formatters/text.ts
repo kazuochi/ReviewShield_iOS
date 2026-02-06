@@ -66,6 +66,7 @@ async function formatFinding(finding: Finding, index: number): Promise<string> {
   if (finding.location) {
     meta.push(`📍 ${finding.location}`);
   }
+  meta.push(`🧩 Rule ${finding.ruleId}`);
   meta.push(`📋 Guideline ${finding.guideline}`);
   meta.push(`🎯 ${getConfidenceLabel(finding.confidence)}`);
   lines.push(c.dim(`   ${meta.join(' • ')}`));

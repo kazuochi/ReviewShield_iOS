@@ -56,7 +56,7 @@ shiplint scan ./MyApp.xcodeproj
 
 🔍 Found 3 issue(s):
 
-1. [CRITICAL] missing-camera-purpose
+1. [CRITICAL] privacy-001-missing-camera-purpose
    📍 Info.plist • 📋 Guideline 5.1.1 • ⚠️ ITMS-90683
    
    Your app references AVFoundation but Info.plist is missing
@@ -68,14 +68,14 @@ shiplint scan ./MyApp.xcodeproj
    <key>NSCameraUsageDescription</key>
    <string>This app uses the camera to scan QR codes.</string>
 
-2. [CRITICAL] missing-privacy-manifest
+2. [CRITICAL] metadata-001-missing-privacy-manifest
    📍 Project • 📋 Required Reason API • ⚠️ ITMS-91053
    
    Your project uses APIs that require a privacy manifest
    (PrivacyInfo.xcprivacy) as of Spring 2024. Without it,
    App Store Connect will reject your binary.
 
-3. [WARNING] third-party-login-no-siwa
+3. [WARNING] auth-001-third-party-login-no-siwa
    📍 Entitlements • 📋 Guideline 4.8
    
    Your app includes Google Sign-In but Sign in with Apple
@@ -94,56 +94,56 @@ These rules prevent **ITMS-90683** ("Missing purpose string in Info.plist"). App
 
 | Rule | Info.plist Key | What It Catches |
 |------|---------------|-----------------|
-| `missing-camera-purpose` | `NSCameraUsageDescription` | App uses AVFoundation/camera APIs without declaring why |
-| `missing-microphone-purpose` | `NSMicrophoneUsageDescription` | App uses audio recording APIs without declaring why |
-| `missing-location-purpose` | `NSLocationWhenInUseUsageDescription` | App uses CoreLocation without declaring why |
-| `missing-photo-library-purpose` | `NSPhotoLibraryUsageDescription` | App accesses Photos without declaring why |
-| `missing-contacts-purpose` | `NSContactsUsageDescription` | App accesses Contacts without declaring why |
-| `missing-bluetooth-purpose` | `NSBluetoothAlwaysUsageDescription` | App uses CoreBluetooth without declaring why |
-| `missing-face-id-purpose` | `NSFaceIDUsageDescription` | App uses LocalAuthentication (Face ID) without declaring why |
-| `location-always-unjustified` | `NSLocationAlwaysAndWhenInUseUsageDescription` | App requests "Always" location without sufficient justification — almost always rejected per [Guideline 5.1.2](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) |
+| `privacy-001-missing-camera-purpose` | `NSCameraUsageDescription` | App uses AVFoundation/camera APIs without declaring why |
+| `privacy-005-missing-microphone-purpose` | `NSMicrophoneUsageDescription` | App uses audio recording APIs without declaring why |
+| `privacy-002-missing-location-purpose` | `NSLocationWhenInUseUsageDescription` | App uses CoreLocation without declaring why |
+| `privacy-004-missing-photo-library-purpose` | `NSPhotoLibraryUsageDescription` | App accesses Photos without declaring why |
+| `privacy-006-missing-contacts-purpose` | `NSContactsUsageDescription` | App accesses Contacts without declaring why |
+| `privacy-008-missing-bluetooth-purpose` | `NSBluetoothAlwaysUsageDescription` | App uses CoreBluetooth without declaring why |
+| `privacy-009-missing-face-id-purpose` | `NSFaceIDUsageDescription` | App uses LocalAuthentication (Face ID) without declaring why |
+| `privacy-007-location-always-unjustified` | `NSLocationAlwaysAndWhenInUseUsageDescription` | App requests "Always" location without sufficient justification — almost always rejected per [Guideline 5.1.2](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing) |
 
 ### App Tracking Transparency — [Guideline 5.1.2](https://developer.apple.com/app-store/review/guidelines/#data-use-and-sharing)
 
 | Rule | What It Catches |
 |------|-----------------|
-| `att-tracking-mismatch` | App imports `AdSupport` or `AppTrackingTransparency` framework but `Info.plist` is missing `NSUserTrackingUsageDescription`. Required since iOS 14.5. [Apple ATT documentation](https://developer.apple.com/documentation/apptrackingtransparency) |
+| `privacy-003-att-tracking-mismatch` | App imports `AdSupport` or `AppTrackingTransparency` framework but `Info.plist` is missing `NSUserTrackingUsageDescription`. Required since iOS 14.5. [Apple ATT documentation](https://developer.apple.com/documentation/apptrackingtransparency) |
 
 ### Sign in with Apple — [Guideline 4.8](https://developer.apple.com/app-store/review/guidelines/#sign-in-with-apple)
 
 | Rule | What It Catches |
 |------|-----------------|
-| `third-party-login-no-siwa` | App uses a third-party login SDK (Google, Facebook, etc.) but Sign in with Apple is not configured. Required since [WWDC19](https://developer.apple.com/videos/play/wwdc2019/706/) for apps offering third-party sign-in. |
+| `auth-001-third-party-login-no-siwa` | App uses a third-party login SDK (Google, Facebook, etc.) but Sign in with Apple is not configured. Required since [WWDC19](https://developer.apple.com/videos/play/wwdc2019/706/) for apps offering third-party sign-in. |
 
 ### App Transport Security — [Guideline 2.1](https://developer.apple.com/app-store/review/guidelines/#performance)
 
 | Rule | What It Catches |
 |------|-----------------|
-| `ats-exception-without-justification` | App sets `NSAllowsArbitraryLoads = YES` or declares ATS exceptions without justification. Apple expects all network traffic to use HTTPS. [Apple ATS documentation](https://developer.apple.com/documentation/bundleresources/information_property_list/nsapptransportsecurity) |
+| `config-001-ats-exception-without-justification` | App sets `NSAllowsArbitraryLoads = YES` or declares ATS exceptions without justification. Apple expects all network traffic to use HTTPS. [Apple ATS documentation](https://developer.apple.com/documentation/bundleresources/information_property_list/nsapptransportsecurity) |
 
 ### Privacy Manifests (iOS 17+) — [WWDC23](https://developer.apple.com/videos/play/wwdc2023/10060/)
 
 | Rule | What It Catches |
 |------|-----------------|
-| `missing-privacy-manifest` | Project uses [required reason APIs](https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api) (UserDefaults, file timestamps, etc.) or third-party SDKs that require a `PrivacyInfo.xcprivacy` file. Enforced by App Store Connect since Spring 2024 via **ITMS-91053**. |
+| `metadata-001-missing-privacy-manifest` | Project uses [required reason APIs](https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_use_of_required_reason_api) (UserDefaults, file timestamps, etc.) or third-party SDKs that require a `PrivacyInfo.xcprivacy` file. Enforced by App Store Connect since Spring 2024 via **ITMS-91053**. |
 
 ### Export Compliance — [Apple Export Compliance](https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption)
 
 | Rule | Info.plist Key | What It Catches |
 |------|---------------|-----------------|
-| `missing-encryption-flag` | `ITSAppUsesNonExemptEncryption` | Missing export compliance declaration. Without this key, App Store Connect prompts for manual compliance answers on every upload — adding friction and potential delays. Set to `false` if your app only uses HTTPS or standard iOS encryption. |
+| `config-002-missing-encryption-flag` | `ITSAppUsesNonExemptEncryption` | Missing export compliance declaration. Without this key, App Store Connect prompts for manual compliance answers on every upload — adding friction and potential delays. Set to `false` if your app only uses HTTPS or standard iOS encryption. |
 
 ### Launch Configuration — [Guideline 4.0 (Design)](https://developer.apple.com/app-store/review/guidelines/#design)
 
 | Rule | Info.plist Key | What It Catches |
 |------|---------------|-----------------|
-| `missing-launch-storyboard` | `UILaunchStoryboardName` | Missing launch storyboard. Required since April 2020 for all iOS apps to support all screen sizes. Apps without this key are rejected. |
+| `config-003-missing-launch-storyboard` | `UILaunchStoryboardName` | Missing launch storyboard. Required since April 2020 for all iOS apps to support all screen sizes. Apps without this key are rejected. |
 
 ### App Configuration — [Guideline 4.0 (Design)](https://developer.apple.com/app-store/review/guidelines/#design)
 
 | Rule | Info.plist Key | What It Catches |
 |------|---------------|-----------------|
-| `missing-supported-orientations` | `UISupportedInterfaceOrientations` | Missing interface orientation declaration. Apps should explicitly declare which orientations they support to avoid UI issues on different devices. |
+| `metadata-002-missing-supported-orientations` | `UISupportedInterfaceOrientations` | Missing interface orientation declaration. Apps should explicitly declare which orientations they support to avoid UI issues on different devices. |
 
 ---
 
@@ -240,9 +240,9 @@ Yes — and this is one of ShipLint's most valuable use cases. AI code generatio
 
 ShipLint's rules are designed to prevent the most common automated rejection errors from App Store Connect:
 
-- **ITMS-90683** — Missing purpose string (`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSLocationWhenInUseUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSContactsUsageDescription`, `NSUserTrackingUsageDescription`). Prevented by ShipLint's six `missing-*-purpose` rules and the `att-tracking-mismatch` rule.
-- **ITMS-91053** — Missing privacy manifest (`PrivacyInfo.xcprivacy`). Prevented by the `missing-privacy-manifest` rule.
-- **ITMS-90078** — Missing or misconfigured entitlements. Prevented by the `third-party-login-no-siwa` rule.
+- **ITMS-90683** — Missing purpose string (`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSLocationWhenInUseUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSContactsUsageDescription`, `NSUserTrackingUsageDescription`). Prevented by ShipLint's `privacy-00x-missing-*-purpose` rules and the `privacy-003-att-tracking-mismatch` rule.
+- **ITMS-91053** — Missing privacy manifest (`PrivacyInfo.xcprivacy`). Prevented by the `metadata-001-missing-privacy-manifest` rule.
+- **ITMS-90078** — Missing or misconfigured entitlements. Prevented by the `auth-001-third-party-login-no-siwa` rule.
 
 ShipLint also catches issues that trigger human reviewer rejections under Guidelines [2.1](https://developer.apple.com/app-store/review/guidelines/#performance), [4.8](https://developer.apple.com/app-store/review/guidelines/#sign-in-with-apple), and [5.1.1](https://developer.apple.com/app-store/review/guidelines/#data-collection-and-storage).
 

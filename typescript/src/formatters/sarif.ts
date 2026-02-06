@@ -8,6 +8,7 @@
  */
 import type { ScanResult, Finding } from '../types/index.js';
 import { Severity } from '../types/index.js';
+import packageJson from '../../package.json';
 
 /**
  * SARIF schema version
@@ -103,7 +104,7 @@ export function formatSARIF(result: ScanResult): string {
         tool: {
           driver: {
             name: 'ShipLint',
-            version: '0.1.0',
+            version: packageJson.version,
             informationUri: 'https://github.com/Signal26AI/ShipLint',
             rules: buildRules(result.findings),
           },

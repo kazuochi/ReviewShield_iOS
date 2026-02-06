@@ -18,7 +18,7 @@ const BACKGROUND_MODES_KEY = 'UIBackgroundModes';
 const LOCATION_BACKGROUND_MODE = 'location';
 
 export const LocationAlwaysUnjustifiedRule: Rule = {
-  id: 'entitlements-001-location-always-unjustified',
+  id: 'privacy-007-location-always-unjustified',
   name: 'Location Always Permission Without Justification',
   description: 'Checks for Always location permission without background mode or proper justification',
   category: RuleCategory.Privacy,
