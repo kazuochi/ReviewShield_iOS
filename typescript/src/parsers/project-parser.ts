@@ -646,7 +646,8 @@ export function createScanContext(discovery: ProjectDiscovery): ScanContext {
     linkedFrameworks,
     dependencies,
     discovery.infoPlistPath,
-    discovery.entitlementsPath
+    discovery.entitlementsPath,
+    discovery.pbxprojPath
   );
 }
 
@@ -660,7 +661,8 @@ export function createContextObject(
   linkedFrameworks: Set<string>,
   dependencies: Dependency[],
   infoPlistPath?: string,
-  entitlementsPath?: string
+  entitlementsPath?: string,
+  pbxprojPath?: string
 ): ScanContext {
   return {
     projectPath,
@@ -668,6 +670,7 @@ export function createContextObject(
     infoPlistPath,
     entitlements,
     entitlementsPath,
+    pbxprojPath,
     linkedFrameworks,
     dependencies,
     

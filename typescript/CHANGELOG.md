@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ReviewShield will be documented in this file.
+All notable changes to ShipLint will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bug #4: Swift CLI placeholder removed
 - Removed Swift CLI (`Sources/`) which only printed "implementation in progress"
 - Removed `Package.swift` and Swift `Tests/` directory
-- ReviewShield is now TypeScript-only as originally intended after pivot
+- ShipLint is now TypeScript-only as originally intended after pivot
 
 ### Changed
 - `ScanOptions.format` and `ScanOptions.verbose` are now optional

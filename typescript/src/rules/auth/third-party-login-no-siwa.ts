@@ -93,7 +93,7 @@ Important: Sign in with Apple must be presented as an equivalent option - same `
           description: `Your app has the Sign in with Apple capability enabled but ` +
             `AuthenticationServices framework doesn't appear to be linked. This may indicate ` +
             `an incomplete SIWA implementation.`,
-          location: 'Project',
+          location: context.pbxprojPath,
           fixGuidance: `Ensure you're importing AuthenticationServices and implementing the sign-in flow:
 
 import AuthenticationServices

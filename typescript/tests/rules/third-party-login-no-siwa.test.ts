@@ -74,6 +74,7 @@ describe('ThirdPartyLoginNoSIWARule', () => {
   });
 
   it('should warn about missing AuthenticationServices when SIWA entitlement exists', async () => {
+    const pbxprojPath = '/test/project/MyApp.xcodeproj/project.pbxproj';
     const context = createContextObject(
       '/test/project',
       { CFBundleIdentifier: 'com.example.app' },
@@ -81,7 +82,10 @@ describe('ThirdPartyLoginNoSIWARule', () => {
       new Set(['UIKit']),  // No AuthenticationServices
       [
         { name: 'GoogleSignIn', version: '6.0.0', source: DependencySource.CocoaPods },
-      ]
+      ],
+      undefined,
+      undefined,
+      pbxprojPath
     );
 
     const findings = await ThirdPartyLoginNoSIWARule.evaluate(context);
@@ -89,6 +93,7 @@ describe('ThirdPartyLoginNoSIWARule', () => {
     expect(findings).toHaveLength(1);
     expect(findings[0].severity).toBe(Severity.Medium);
     expect(findings[0].title).toBe('Sign in with Apple May Not Be Implemented');
+    expect(findings[0].location).toBe(pbxprojPath);
   });
 
   it('should have lower confidence for Firebase Auth only', async () => {

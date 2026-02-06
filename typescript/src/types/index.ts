@@ -103,6 +103,7 @@ export interface ScanContext {
   infoPlistPath?: string;
   entitlements: Record<string, unknown>;
   entitlementsPath?: string;
+  pbxprojPath?: string;
   linkedFrameworks: Set<string>;
   dependencies: Dependency[];
   

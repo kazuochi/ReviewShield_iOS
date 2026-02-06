@@ -106,7 +106,7 @@ Users should understand what tracking means for their privacy.`,
         title: 'AppTrackingTransparency Framework Not Linked',
         description: `Your app has NSUserTrackingUsageDescription but AppTrackingTransparency framework ` +
           `does not appear to be linked. This may indicate an incomplete ATT implementation.`,
-        location: 'Project',
+        location: context.pbxprojPath,
         fixGuidance: `Ensure you're importing AppTrackingTransparency in your code and actually showing ` +
           `the tracking permission prompt to users.
 

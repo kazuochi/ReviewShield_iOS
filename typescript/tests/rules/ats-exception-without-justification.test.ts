@@ -6,6 +6,28 @@ import { createContextObject } from '../../src/parsers/project-parser';
 import { Severity, Confidence } from '../../src/types';
 
 describe('ATSExceptionWithoutJustificationRule', () => {
+  it('should use the real Info.plist file path as the finding location', async () => {
+    const infoPlistPath = '/test/project/Info.plist';
+    const context = createContextObject(
+      '/test/project',
+      {
+        CFBundleIdentifier: 'com.example.app',
+        NSAppTransportSecurity: {
+          NSAllowsArbitraryLoads: true,
+        },
+      },
+      {},
+      new Set(['UIKit']),
+      [],
+      infoPlistPath
+    );
+
+    const findings = await ATSExceptionWithoutJustificationRule.evaluate(context);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0].location).toBe(infoPlistPath);
+  });
+
   it('should return no findings when no ATS configuration exists', async () => {
     const context = createContextObject(
       '/test/project',

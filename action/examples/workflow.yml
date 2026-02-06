@@ -1,8 +1,8 @@
-# ReviewShield GitHub Action - Example Workflow
+# ShipLint GitHub Action - Example Workflow
 # 
-# Add this file to your repo at: .github/workflows/reviewshield.yml
+# Add this file to your repo at: .github/workflows/shiplint.yml
 
-name: ReviewShield
+name: ShipLint
 
 on:
   pull_request:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Run ReviewShield
+      - name: Run ShipLint
         uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
@@ -29,7 +29,7 @@ jobs:
 ---
 # Alternative: SARIF output for GitHub Security tab
 
-name: ReviewShield (Security Tab)
+name: ShipLint (Security Tab)
 
 on:
   pull_request:
@@ -38,7 +38,7 @@ on:
 
 jobs:
   scan:
-    name: ReviewShield Security Scan
+    name: ShipLint Security Scan
     runs-on: ubuntu-latest
     permissions:
       security-events: write  # Required for uploading SARIF
@@ -48,8 +48,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Run ReviewShield
-        id: reviewshield
+      - name: Run ShipLint
+        id: shiplint
         uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
@@ -59,12 +59,12 @@ jobs:
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: reviewshield-results.sarif
+          sarif_file: shiplint-results.sarif
 
 ---
 # Alternative: Monorepo with multiple iOS projects
 
-name: ReviewShield (Monorepo)
+name: ShipLint (Monorepo)
 
 on:
   pull_request:
@@ -89,7 +89,7 @@ jobs:
 ---
 # Alternative: Custom rule selection
 
-name: ReviewShield (Custom Rules)
+name: ShipLint (Custom Rules)
 
 on:
   pull_request:
@@ -100,15 +100,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Run ReviewShield (privacy rules only)
+      - name: Run ShipLint (privacy rules only)
         uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
-          rules: 'missing-camera-purpose,missing-location-purpose,att-tracking-mismatch'
+          rules: 'privacy-001-missing-camera-purpose,privacy-002-missing-location-purpose,privacy-003-att-tracking-mismatch'
       
       # Or exclude specific rules
-      - name: Run ReviewShield (exclude low-priority)
+      - name: Run ShipLint (exclude low-priority)
         uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
-          exclude: 'ats-exception-without-justification'
+          exclude: 'config-001-ats-exception-without-justification'

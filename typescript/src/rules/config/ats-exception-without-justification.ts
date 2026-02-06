@@ -34,6 +34,7 @@ export const ATSExceptionWithoutJustificationRule: Rule = {
     }
 
     const findings: Finding[] = [];
+    const location = context.infoPlistPath || 'Info.plist';
     
     const allowsArbitraryLoads = atsConfig[ALLOWS_ARBITRARY_LOADS_KEY] as boolean | undefined;
     const allowsArbitraryLoadsWebView = atsConfig[ALLOWS_ARBITRARY_LOADS_WEBVIEW_KEY] as boolean | undefined;
@@ -50,7 +51,7 @@ export const ATSExceptionWithoutJustificationRule: Rule = {
             `This disables App Transport Security for ALL network connections, which is a significant ` +
             `security risk. Apple will require justification during App Store review and may reject ` +
             `your app if there's no valid reason.`,
-          location: 'Info.plist (NSAppTransportSecurity)',
+          location,
           fixGuidance: `Instead of disabling ATS entirely, configure specific exceptions for domains that ` +
             `require HTTP:
 
@@ -84,7 +85,7 @@ If you must use NSAllowsArbitraryLoads, you'll need to provide App Store Connect
           description: `Your app has both NSAllowsArbitraryLoads = true AND specific NSExceptionDomains. ` +
             `This is an unusual configuration. If you're using exception domains, you likely don't ` +
             `need NSAllowsArbitraryLoads at all.`,
-          location: 'Info.plist (NSAppTransportSecurity)',
+          location,
           fixGuidance: `Consider removing NSAllowsArbitraryLoads and keeping only NSExceptionDomains for ` +
             `the specific domains that need HTTP access. This provides better security by limiting ` +
             `insecure connections to only the domains you've explicitly allowed.
@@ -106,7 +107,7 @@ The exception domains are ignored when NSAllowsArbitraryLoads is true.`,
         description: `NSAllowsArbitraryLoadsInWebContent is set to true, allowing web views to load ` +
           `insecure HTTP content. While this is less severe than NSAllowsArbitraryLoads, it still ` +
           `represents a security consideration.`,
-        location: 'Info.plist (NSAppTransportSecurity)',
+        location,
         fixGuidance: `If your app needs to display arbitrary web content (like a browser), this setting ` +
           `may be justified. However, if your web views only load content from known sources, consider:
 
@@ -148,7 +149,7 @@ The exception domains are ignored when NSAllowsArbitraryLoads is true.`,
             title: `Insecure HTTP Allowed for ${domain}`,
             description: `Domain "${domain}" allows insecure HTTP connections without specifying ` +
               `a minimum TLS version. Consider if this domain can support HTTPS.`,
-            location: 'Info.plist (NSExceptionDomains)',
+            location,
             fixGuidance: `If the server supports TLS, add NSExceptionMinimumTLSVersion:
 
 <key>${domain}</key>
