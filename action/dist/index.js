@@ -25690,7 +25690,6 @@ async function scan(options) {
     const context = (0, project_parser_js_1.createScanContext)(discovery);
     // Determine which rules to run
     let rules;
-    const warnings = [];
     if (options.rules && options.rules.length > 0) {
         // BUG FIX #2: Validate rule IDs and error on unknown
         const { rules: foundRules, unknownIds } = (0, index_js_1.getRulesWithValidation)(options.rules);
@@ -25908,9 +25907,9 @@ function formatSARIF(result) {
             {
                 tool: {
                     driver: {
-                        name: 'ReviewShield',
+                        name: 'ShipLint',
                         version: '0.1.0',
-                        informationUri: 'https://github.com/kazuochi/ReviewShield_iOS',
+                        informationUri: 'https://github.com/Signal26AI/ShipLint',
                         rules: buildRules(result.findings),
                     },
                 },
@@ -26017,7 +26016,7 @@ async function formatText(result) {
     const c = await getChalk();
     const lines = [];
     // Header
-    lines.push(c.bold.underline('\n🛡️  ReviewShield Scan Results\n'));
+    lines.push(c.bold.underline('\n🛡️  ShipLint Scan Results\n'));
     lines.push(`📁 Project: ${result.projectPath}`);
     lines.push(`🕐 Scanned: ${result.timestamp.toISOString()}`);
     lines.push(`⏱️  Duration: ${result.duration}ms`);
@@ -26071,7 +26070,7 @@ async function formatText(result) {
 "use strict";
 
 /**
- * ReviewShield - App Store Review Guideline Scanner
+ * ShipLint - App Store Pre-Submission Linter
  *
  * Main library entry point for programmatic usage
  */
@@ -26995,7 +26994,7 @@ function parseBuildConfigurations(content) {
     let match;
     while ((match = configRegex.exec(content)) !== null) {
         const id = match[1];
-        const commentName = match[2].trim();
+        // match[2] is the comment name (unused)
         const settingsBlock = match[3];
         const name = match[4].trim();
         // Parse build settings
@@ -27121,19 +27120,19 @@ function normalizeXcodePath(rawPath, context = {}) {
     for (let i = 0; i < maxIterations; i++) {
         const before = result;
         // Remove $(SRCROOT)/ or ${SRCROOT}/
-        result = result.replace(/\$[\({]SRCROOT[\)}]\/?/g, '');
+        result = result.replace(/\$[({]SRCROOT[)}]\/?/g, '');
         // Remove $(PROJECT_DIR)/ or ${PROJECT_DIR}/
-        result = result.replace(/\$[\({]PROJECT_DIR[\)}]\/?/g, '');
+        result = result.replace(/\$[({]PROJECT_DIR[)}]\/?/g, '');
         // Replace $(TARGET_NAME) or ${TARGET_NAME}
         if (context.targetName) {
-            result = result.replace(/\$[\({]TARGET_NAME[\)}]/g, context.targetName);
+            result = result.replace(/\$[({]TARGET_NAME[)}]/g, context.targetName);
         }
         // Replace $(PRODUCT_NAME) or ${PRODUCT_NAME}
         if (context.productName) {
-            result = result.replace(/\$[\({]PRODUCT_NAME[\)}]/g, context.productName);
+            result = result.replace(/\$[({]PRODUCT_NAME[)}]/g, context.productName);
         }
         // Replace $(inherited) - usually in arrays, remove it
-        result = result.replace(/\$[\({]inherited[\)}]/g, '');
+        result = result.replace(/\$[({]inherited[)}]/g, '');
         // If no changes were made, we're done
         if (result === before) {
             break;
@@ -27592,7 +27591,7 @@ function parsePbxprojForArtifactsFallback(content, projectDir) {
     // Find INFOPLIST_FILE - may have quotes or not
     const infoPlistMatch = content.match(/INFOPLIST_FILE\s*=\s*"?([^";]+)"?\s*;/);
     if (infoPlistMatch) {
-        let plistPath = (0, pbxproj_parser_js_1.normalizeXcodePath)(infoPlistMatch[1].trim());
+        const plistPath = (0, pbxproj_parser_js_1.normalizeXcodePath)(infoPlistMatch[1].trim());
         const resolvedPath = path.resolve(projectDir, plistPath);
         if (fs.existsSync(resolvedPath)) {
             result.infoPlistPath = resolvedPath;
@@ -27601,7 +27600,7 @@ function parsePbxprojForArtifactsFallback(content, projectDir) {
     // Find CODE_SIGN_ENTITLEMENTS
     const entitlementsMatch = content.match(/CODE_SIGN_ENTITLEMENTS\s*=\s*"?([^";]+)"?\s*;/);
     if (entitlementsMatch) {
-        let entPath = (0, pbxproj_parser_js_1.normalizeXcodePath)(entitlementsMatch[1].trim());
+        const entPath = (0, pbxproj_parser_js_1.normalizeXcodePath)(entitlementsMatch[1].trim());
         const resolvedPath = path.resolve(projectDir, entPath);
         if (fs.existsSync(resolvedPath)) {
             result.entitlementsPath = resolvedPath;
@@ -27877,6 +27876,9 @@ function discoverInfoPlist(basePath, discovery, targetName) {
  * to avoid picking up entitlements from sibling projects in monorepos
  *
  * P2-B FIX: Excludes directories containing a different .xcodeproj (sibling projects)
+ *
+ * P2-C FIX: If basePath contains multiple .xcodeproj bundles (monorepo), filter out
+ * root-level entitlements files to prevent selecting sibling project entitlements
  */
 function discoverEntitlements(basePath, discovery, targetName) {
     // Get the current xcodeproj path for sibling exclusion
@@ -27894,8 +27896,16 @@ function discoverEntitlements(basePath, discovery, targetName) {
             }
         }
     }
+    // P2-C FIX: Check if basePath has multiple xcodeprojs (monorepo indicator)
+    // This prevents picking up root-level entitlements from sibling projects
+    const isMonorepoRoot = hasMultipleXcodeprojs(basePath);
     // P2-B FIX: Recursive search with sibling project exclusion
-    const entitlements = findFilesRecursive(basePath, (name) => name.endsWith('.entitlements'), findOptions);
+    let entitlements = findFilesRecursive(basePath, (name) => name.endsWith('.entitlements'), findOptions);
+    // P2-C FIX: If monorepo root, filter out root-level entitlements files
+    // (recursive search finds files in basePath directory as well)
+    if (isMonorepoRoot && entitlements.length > 0) {
+        entitlements = entitlements.filter(p => path.dirname(path.resolve(p)) !== path.resolve(basePath));
+    }
     if (entitlements.length > 0) {
         // Prefer shorter paths (closer to root)
         entitlements.sort((a, b) => a.split(path.sep).length - b.split(path.sep).length);
@@ -28599,7 +28609,7 @@ The exception domains are ignored when NSAllowsArbitraryLoads is true.`,
                 }
                 // Check if exception requires minimum TLS version
                 const allowsInsecure = domainConfig['NSExceptionAllowsInsecureHTTPLoads'];
-                const requiresCert = domainConfig['NSExceptionRequiresForwardSecrecy'];
+                // NSExceptionRequiresForwardSecrecy available in domainConfig if needed
                 const minTLS = domainConfig['NSExceptionMinimumTLSVersion'];
                 if (allowsInsecure === true && !minTLS) {
                     findings.push((0, base_js_1.makeCustomFinding)(this, index_js_1.Severity.Low, index_js_1.Confidence.Medium, {
@@ -28636,13 +28646,113 @@ Better yet, work with the server operator to enable HTTPS and remove this except
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ATSExceptionWithoutJustificationRule = void 0;
+exports.MissingLaunchStoryboardRule = exports.MissingEncryptionFlagRule = exports.ATSExceptionWithoutJustificationRule = void 0;
 /**
  * Config rules exports
  */
 var ats_exception_without_justification_js_1 = __nccwpck_require__(2616);
 Object.defineProperty(exports, "ATSExceptionWithoutJustificationRule", ({ enumerable: true, get: function () { return ats_exception_without_justification_js_1.ATSExceptionWithoutJustificationRule; } }));
+var missing_encryption_flag_js_1 = __nccwpck_require__(1451);
+Object.defineProperty(exports, "MissingEncryptionFlagRule", ({ enumerable: true, get: function () { return missing_encryption_flag_js_1.MissingEncryptionFlagRule; } }));
+var missing_launch_storyboard_js_1 = __nccwpck_require__(9436);
+Object.defineProperty(exports, "MissingLaunchStoryboardRule", ({ enumerable: true, get: function () { return missing_launch_storyboard_js_1.MissingLaunchStoryboardRule; } }));
 //# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ 1451:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingEncryptionFlagRule = void 0;
+const index_js_1 = __nccwpck_require__(5815);
+const base_js_1 = __nccwpck_require__(8688);
+exports.MissingEncryptionFlagRule = {
+    id: 'config-002-missing-encryption-flag',
+    name: 'Missing Export Compliance Flag',
+    description: 'Checks for missing ITSAppUsesNonExemptEncryption in Info.plist',
+    category: index_js_1.RuleCategory.Config,
+    severity: index_js_1.Severity.Medium,
+    confidence: index_js_1.Confidence.High,
+    guidelineReference: 'Export Compliance',
+    async evaluate(context) {
+        // If the key exists (true or false), the developer has declared their intent
+        if (context.hasPlistKey('ITSAppUsesNonExemptEncryption')) {
+            return [];
+        }
+        return [
+            (0, base_js_1.makeFinding)(this, {
+                description: `Your Info.plist is missing the ITSAppUsesNonExemptEncryption key. ` +
+                    `Without this key, App Store Connect will prompt you to answer export compliance ` +
+                    `questions manually on every single upload. This causes friction and potential delays ` +
+                    `in your submission workflow.`,
+                location: 'Info.plist',
+                fixGuidance: `Add the ITSAppUsesNonExemptEncryption key to your Info.plist. If your app ` +
+                    `only uses HTTPS/URLSession or standard iOS encryption (most apps), set it to false:
+
+<key>ITSAppUsesNonExemptEncryption</key>
+<false/>
+
+Set it to true only if your app uses custom encryption algorithms beyond standard HTTPS ` +
+                    `(e.g., proprietary encryption, custom TLS implementations). In that case, you'll also ` +
+                    `need to submit export compliance documentation to Apple.`,
+                documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption',
+            }),
+        ];
+    },
+};
+//# sourceMappingURL=missing-encryption-flag.js.map
+
+/***/ }),
+
+/***/ 9436:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingLaunchStoryboardRule = void 0;
+const index_js_1 = __nccwpck_require__(5815);
+const base_js_1 = __nccwpck_require__(8688);
+exports.MissingLaunchStoryboardRule = {
+    id: 'config-003-missing-launch-storyboard',
+    name: 'Missing Launch Storyboard',
+    description: 'Checks for missing UILaunchStoryboardName in Info.plist',
+    category: index_js_1.RuleCategory.Config,
+    severity: index_js_1.Severity.Critical,
+    confidence: index_js_1.Confidence.High,
+    guidelineReference: '4.0',
+    async evaluate(context) {
+        // Only flag if the key is completely absent.
+        // An empty string is valid (SwiftUI lifecycle apps use empty UILaunchStoryboardName).
+        if (context.hasPlistKey('UILaunchStoryboardName')) {
+            return [];
+        }
+        return [
+            (0, base_js_1.makeFinding)(this, {
+                description: `Your Info.plist is missing the UILaunchStoryboardName key. Since April 2020, ` +
+                    `all apps submitted to the App Store must include a launch storyboard to support ` +
+                    `all device screen sizes. Apps without a launch storyboard will be rejected.`,
+                location: 'Info.plist',
+                fixGuidance: `Add UILaunchStoryboardName to your Info.plist pointing to your launch storyboard:
+
+<key>UILaunchStoryboardName</key>
+<string>LaunchScreen</string>
+
+If you're using a SwiftUI app lifecycle, set it to an empty string — Xcode typically ` +
+                    `handles this automatically. Make sure a corresponding LaunchScreen.storyboard file ` +
+                    `exists in your project.
+
+Note: Launch images (UILaunchImages / asset catalog launch images) are no longer accepted ` +
+                    `as a substitute for launch storyboards.`,
+                documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/uilaunchstoryboardname',
+            }),
+        ];
+    },
+};
+//# sourceMappingURL=missing-launch-storyboard.js.map
 
 /***/ }),
 
@@ -28692,6 +28802,11 @@ const missing_contacts_purpose_js_1 = __nccwpck_require__(4565);
 const third_party_login_no_siwa_js_1 = __nccwpck_require__(1879);
 const missing_privacy_manifest_js_1 = __nccwpck_require__(4086);
 const ats_exception_without_justification_js_1 = __nccwpck_require__(2616);
+const missing_encryption_flag_js_1 = __nccwpck_require__(1451);
+const missing_launch_storyboard_js_1 = __nccwpck_require__(9436);
+const missing_bluetooth_purpose_js_1 = __nccwpck_require__(3622);
+const missing_face_id_purpose_js_1 = __nccwpck_require__(1481);
+const missing_supported_orientations_js_1 = __nccwpck_require__(8890);
 /**
  * All available rules
  */
@@ -28703,9 +28818,14 @@ exports.allRules = [
     missing_photo_library_purpose_js_1.MissingPhotoLibraryPurposeRule,
     missing_microphone_purpose_js_1.MissingMicrophonePurposeRule,
     missing_contacts_purpose_js_1.MissingContactsPurposeRule,
+    missing_bluetooth_purpose_js_1.MissingBluetoothPurposeRule,
+    missing_face_id_purpose_js_1.MissingFaceIdPurposeRule,
     third_party_login_no_siwa_js_1.ThirdPartyLoginNoSIWARule,
     missing_privacy_manifest_js_1.MissingPrivacyManifestRule,
+    missing_supported_orientations_js_1.MissingSupportedOrientationsRule,
     ats_exception_without_justification_js_1.ATSExceptionWithoutJustificationRule,
+    missing_encryption_flag_js_1.MissingEncryptionFlagRule,
+    missing_launch_storyboard_js_1.MissingLaunchStoryboardRule,
 ];
 /**
  * Rule registry - maps rule IDs to rule instances
@@ -28762,12 +28882,14 @@ function getRulesExcluding(excludeIds) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MissingPrivacyManifestRule = void 0;
+exports.MissingSupportedOrientationsRule = exports.MissingPrivacyManifestRule = void 0;
 /**
  * Metadata rules exports
  */
 var missing_privacy_manifest_js_1 = __nccwpck_require__(4086);
 Object.defineProperty(exports, "MissingPrivacyManifestRule", ({ enumerable: true, get: function () { return missing_privacy_manifest_js_1.MissingPrivacyManifestRule; } }));
+var missing_supported_orientations_js_1 = __nccwpck_require__(8890);
+Object.defineProperty(exports, "MissingSupportedOrientationsRule", ({ enumerable: true, get: function () { return missing_supported_orientations_js_1.MissingSupportedOrientationsRule; } }));
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -28965,6 +29087,81 @@ If any are used, create a PrivacyInfo.xcprivacy and declare the appropriate reas
 
 /***/ }),
 
+/***/ 8890:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingSupportedOrientationsRule = void 0;
+const index_js_1 = __nccwpck_require__(5815);
+const base_js_1 = __nccwpck_require__(8688);
+exports.MissingSupportedOrientationsRule = {
+    id: 'metadata-002-missing-supported-orientations',
+    name: 'Missing Supported Orientations',
+    description: 'Checks for missing UISupportedInterfaceOrientations in Info.plist',
+    category: index_js_1.RuleCategory.Metadata,
+    severity: index_js_1.Severity.Medium,
+    confidence: index_js_1.Confidence.High,
+    guidelineReference: '4.0',
+    async evaluate(context) {
+        const orientations = context.plistArray('UISupportedInterfaceOrientations');
+        // Case 1: Key completely missing
+        if (orientations === undefined) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    description: `Your Info.plist is missing the UISupportedInterfaceOrientations key. ` +
+                        `Apps should declare which interface orientations they support to ensure correct ` +
+                        `behavior across all device types. Without this key, Apple's defaults may not match ` +
+                        `your app's intended behavior, which can lead to UI issues and potential rejection.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Add UISupportedInterfaceOrientations to your Info.plist with the orientations ` +
+                        `your app supports:
+
+<key>UISupportedInterfaceOrientations</key>
+<array>
+    <string>UIInterfaceOrientationPortrait</string>
+</array>
+
+Common orientation values:
+- UIInterfaceOrientationPortrait
+- UIInterfaceOrientationPortraitUpsideDown
+- UIInterfaceOrientationLandscapeLeft
+- UIInterfaceOrientationLandscapeRight
+
+For iPad, also consider adding UISupportedInterfaceOrientations~ipad with ` +
+                        `all four orientations (iPad apps are expected to support all orientations).`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/uisupportedinterfaceorientations',
+                }),
+            ];
+        }
+        // Case 2: Empty array
+        if (orientations.length === 0) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    title: 'Empty Supported Orientations',
+                    description: `UISupportedInterfaceOrientations exists in Info.plist but is an empty array. ` +
+                        `Your app must declare at least one supported orientation.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Add at least one orientation to UISupportedInterfaceOrientations:
+
+<key>UISupportedInterfaceOrientations</key>
+<array>
+    <string>UIInterfaceOrientationPortrait</string>
+</array>
+
+Most apps should support at minimum UIInterfaceOrientationPortrait.`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/uisupportedinterfaceorientations',
+                }),
+            ];
+        }
+        return [];
+    },
+};
+//# sourceMappingURL=missing-supported-orientations.js.map
+
+/***/ }),
+
 /***/ 6072:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -29091,7 +29288,7 @@ Note: If you're using a different approach to ATT (like via a third-party SDK wr
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.MissingContactsPurposeRule = exports.MissingMicrophonePurposeRule = exports.MissingPhotoLibraryPurposeRule = exports.ATTTrackingMismatchRule = exports.LocationAlwaysUnjustifiedRule = exports.MissingLocationPurposeRule = exports.MissingCameraPurposeRule = void 0;
+exports.MissingFaceIdPurposeRule = exports.MissingBluetoothPurposeRule = exports.MissingContactsPurposeRule = exports.MissingMicrophonePurposeRule = exports.MissingPhotoLibraryPurposeRule = exports.ATTTrackingMismatchRule = exports.LocationAlwaysUnjustifiedRule = exports.MissingLocationPurposeRule = exports.MissingCameraPurposeRule = void 0;
 /**
  * Privacy rules exports
  */
@@ -29109,6 +29306,10 @@ var missing_microphone_purpose_js_1 = __nccwpck_require__(4284);
 Object.defineProperty(exports, "MissingMicrophonePurposeRule", ({ enumerable: true, get: function () { return missing_microphone_purpose_js_1.MissingMicrophonePurposeRule; } }));
 var missing_contacts_purpose_js_1 = __nccwpck_require__(4565);
 Object.defineProperty(exports, "MissingContactsPurposeRule", ({ enumerable: true, get: function () { return missing_contacts_purpose_js_1.MissingContactsPurposeRule; } }));
+var missing_bluetooth_purpose_js_1 = __nccwpck_require__(3622);
+Object.defineProperty(exports, "MissingBluetoothPurposeRule", ({ enumerable: true, get: function () { return missing_bluetooth_purpose_js_1.MissingBluetoothPurposeRule; } }));
+var missing_face_id_purpose_js_1 = __nccwpck_require__(1481);
+Object.defineProperty(exports, "MissingFaceIdPurposeRule", ({ enumerable: true, get: function () { return missing_face_id_purpose_js_1.MissingFaceIdPurposeRule; } }));
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -29219,6 +29420,93 @@ Bad examples:
     },
 };
 //# sourceMappingURL=location-always-unjustified.js.map
+
+/***/ }),
+
+/***/ 3622:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingBluetoothPurposeRule = void 0;
+const index_js_1 = __nccwpck_require__(5815);
+const plist_parser_js_1 = __nccwpck_require__(5128);
+const base_js_1 = __nccwpck_require__(8688);
+const BLUETOOTH_FRAMEWORKS = ['CoreBluetooth'];
+exports.MissingBluetoothPurposeRule = {
+    id: 'privacy-008-missing-bluetooth-purpose',
+    name: 'Missing Bluetooth Usage Description',
+    description: 'Checks for Bluetooth framework usage without NSBluetoothAlwaysUsageDescription',
+    category: index_js_1.RuleCategory.Privacy,
+    severity: index_js_1.Severity.Critical,
+    confidence: index_js_1.Confidence.High,
+    guidelineReference: '5.1.1',
+    async evaluate(context) {
+        const detectedFrameworks = BLUETOOTH_FRAMEWORKS.filter(f => context.hasFramework(f));
+        if (detectedFrameworks.length === 0) {
+            return [];
+        }
+        const bluetoothDescription = context.plistString('NSBluetoothAlwaysUsageDescription');
+        // Case 1: Completely missing
+        if (bluetoothDescription === undefined) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    description: `Your app links against Bluetooth frameworks (${detectedFrameworks.join(', ')}) ` +
+                        `but Info.plist is missing NSBluetoothAlwaysUsageDescription. Apps that access Bluetooth ` +
+                        `must provide a purpose string explaining why access is needed.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Add NSBluetoothAlwaysUsageDescription to your Info.plist with a clear, user-facing ` +
+                        `explanation of why your app needs Bluetooth access. For example:
+
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>We use Bluetooth to connect to your fitness tracker and sync workout data.</string>
+
+The description should explain the specific feature that uses Bluetooth and ` +
+                        `be written from the user's perspective.`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsbluetoothalwaysusagedescription',
+                }),
+            ];
+        }
+        // Case 2: Empty or whitespace only
+        if (bluetoothDescription.trim() === '') {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    title: 'Empty Bluetooth Usage Description',
+                    description: `NSBluetoothAlwaysUsageDescription exists in Info.plist but is empty. ` +
+                        `Apple requires a meaningful description explaining why your app needs Bluetooth access.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Update NSBluetoothAlwaysUsageDescription with a clear, specific explanation of why ` +
+                        `your app needs Bluetooth access. Generic or empty descriptions may be rejected.
+
+Good example: "We use Bluetooth to connect to your heart rate monitor."
+Bad example: "Bluetooth access required" or ""`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsbluetoothalwaysusagedescription',
+                }),
+            ];
+        }
+        // Case 3: Placeholder text detected
+        if ((0, plist_parser_js_1.isPlaceholder)(bluetoothDescription)) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    title: 'Placeholder Bluetooth Usage Description',
+                    description: `NSBluetoothAlwaysUsageDescription appears to contain placeholder text: "${bluetoothDescription}". ` +
+                        `Apple requires meaningful, user-facing descriptions.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Replace the placeholder text with a clear explanation of why your app needs Bluetooth access. ` +
+                        `The description should be specific to your app's features.
+
+Current value: "${bluetoothDescription}"
+
+Write a description that helps users understand what feature uses Bluetooth and why.`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsbluetoothalwaysusagedescription',
+                }),
+            ];
+        }
+        return [];
+    },
+};
+//# sourceMappingURL=missing-bluetooth-purpose.js.map
 
 /***/ }),
 
@@ -29401,6 +29689,93 @@ Write a description that helps users understand what feature uses contacts and w
     },
 };
 //# sourceMappingURL=missing-contacts-purpose.js.map
+
+/***/ }),
+
+/***/ 1481:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MissingFaceIdPurposeRule = void 0;
+const index_js_1 = __nccwpck_require__(5815);
+const plist_parser_js_1 = __nccwpck_require__(5128);
+const base_js_1 = __nccwpck_require__(8688);
+const FACE_ID_FRAMEWORKS = ['LocalAuthentication'];
+exports.MissingFaceIdPurposeRule = {
+    id: 'privacy-009-missing-face-id-purpose',
+    name: 'Missing Face ID Usage Description',
+    description: 'Checks for LocalAuthentication framework usage without NSFaceIDUsageDescription',
+    category: index_js_1.RuleCategory.Privacy,
+    severity: index_js_1.Severity.Critical,
+    confidence: index_js_1.Confidence.High,
+    guidelineReference: '5.1.1',
+    async evaluate(context) {
+        const detectedFrameworks = FACE_ID_FRAMEWORKS.filter(f => context.hasFramework(f));
+        if (detectedFrameworks.length === 0) {
+            return [];
+        }
+        const faceIdDescription = context.plistString('NSFaceIDUsageDescription');
+        // Case 1: Completely missing
+        if (faceIdDescription === undefined) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    description: `Your app links against biometric authentication frameworks (${detectedFrameworks.join(', ')}) ` +
+                        `but Info.plist is missing NSFaceIDUsageDescription. Apps that use Face ID ` +
+                        `must provide a purpose string explaining why biometric authentication is needed.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Add NSFaceIDUsageDescription to your Info.plist with a clear, user-facing ` +
+                        `explanation of why your app needs Face ID access. For example:
+
+<key>NSFaceIDUsageDescription</key>
+<string>We use Face ID to securely authenticate you for quick access to your account.</string>
+
+The description should explain what feature uses Face ID and ` +
+                        `be written from the user's perspective.`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsfaceidusagedescription',
+                }),
+            ];
+        }
+        // Case 2: Empty or whitespace only
+        if (faceIdDescription.trim() === '') {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    title: 'Empty Face ID Usage Description',
+                    description: `NSFaceIDUsageDescription exists in Info.plist but is empty. ` +
+                        `Apple requires a meaningful description explaining why your app needs Face ID access.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Update NSFaceIDUsageDescription with a clear, specific explanation of why ` +
+                        `your app needs Face ID access. Generic or empty descriptions may be rejected.
+
+Good example: "We use Face ID to securely log you in without a password."
+Bad example: "Face ID access required" or ""`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsfaceidusagedescription',
+                }),
+            ];
+        }
+        // Case 3: Placeholder text detected
+        if ((0, plist_parser_js_1.isPlaceholder)(faceIdDescription)) {
+            return [
+                (0, base_js_1.makeFinding)(this, {
+                    title: 'Placeholder Face ID Usage Description',
+                    description: `NSFaceIDUsageDescription appears to contain placeholder text: "${faceIdDescription}". ` +
+                        `Apple requires meaningful, user-facing descriptions.`,
+                    location: 'Info.plist',
+                    fixGuidance: `Replace the placeholder text with a clear explanation of why your app needs Face ID access. ` +
+                        `The description should be specific to your app's features.
+
+Current value: "${faceIdDescription}"
+
+Write a description that helps users understand what feature uses Face ID and why.`,
+                    documentationURL: 'https://developer.apple.com/documentation/bundleresources/information_property_list/nsfaceidusagedescription',
+                }),
+            ];
+        }
+        return [];
+    },
+};
+//# sourceMappingURL=missing-face-id-purpose.js.map
 
 /***/ }),
 
@@ -29802,7 +30177,7 @@ Good example: "Save edited photos to your library."`,
 "use strict";
 
 /**
- * TypeScript interfaces for ReviewShield
+ * TypeScript interfaces for ShipLint
  */
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OutputFormat = exports.DependencySource = exports.RuleCategory = exports.Confidence = exports.Severity = void 0;
@@ -40936,19 +41311,19 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const path = __importStar(__nccwpck_require__(6928));
 const fs = __importStar(__nccwpck_require__(9896));
-const reviewshield_1 = __nccwpck_require__(7745);
+const shiplint_1 = __nccwpck_require__(7745);
 /**
  * Severity mapping for GitHub annotations
  */
 function severityToAnnotationLevel(severity) {
     switch (severity) {
-        case reviewshield_1.Severity.Critical:
-        case reviewshield_1.Severity.High:
+        case shiplint_1.Severity.Critical:
+        case shiplint_1.Severity.High:
             return 'error';
-        case reviewshield_1.Severity.Medium:
+        case shiplint_1.Severity.Medium:
             return 'warning';
-        case reviewshield_1.Severity.Low:
-        case reviewshield_1.Severity.Info:
+        case shiplint_1.Severity.Low:
+        case shiplint_1.Severity.Info:
         default:
             return 'notice';
     }
@@ -40967,7 +41342,7 @@ function createAnnotations(findings, basePath) {
             finding.documentationURL ? `📖 ${finding.documentationURL}` : '',
         ].filter(Boolean).join('\n');
         const properties = {
-            title: `ReviewShield: ${finding.ruleId}`,
+            title: `ShipLint: ${finding.ruleId}`,
             file,
         };
         switch (level) {
@@ -40987,7 +41362,7 @@ function createAnnotations(findings, basePath) {
  * Write SARIF output for GitHub Security tab
  */
 async function writeSarifOutput(result, outputPath) {
-    const sarifContent = await (0, reviewshield_1.format)(result, reviewshield_1.OutputFormat.SARIF);
+    const sarifContent = await (0, shiplint_1.format)(result, shiplint_1.OutputFormat.SARIF);
     fs.writeFileSync(outputPath, sarifContent, 'utf-8');
     return outputPath;
 }
@@ -41008,7 +41383,7 @@ async function run() {
         // Parse rule filters
         const rules = rulesInput ? rulesInput.split(',').map(r => r.trim()).filter(Boolean) : undefined;
         const exclude = excludeInput ? excludeInput.split(',').map(r => r.trim()).filter(Boolean) : undefined;
-        core.info(`🛡️ ReviewShield - Scanning for App Store Review issues`);
+        core.info(`🛡️ ShipLint - Scanning for App Store Review issues`);
         core.info(`📁 Path: ${absolutePath}`);
         if (rules?.length) {
             core.info(`🎯 Rules: ${rules.join(', ')}`);
@@ -41017,7 +41392,7 @@ async function run() {
             core.info(`🚫 Excluding: ${exclude.join(', ')}`);
         }
         // Run scan
-        const result = await (0, reviewshield_1.scan)({
+        const result = await (0, shiplint_1.scan)({
             path: absolutePath,
             rules,
             exclude,
@@ -41030,21 +41405,21 @@ async function run() {
         createAnnotations(result.findings, workspacePath);
         // Handle output format
         if (outputFormat === 'sarif') {
-            const sarifPath = path.join(workspacePath, 'reviewshield-results.sarif');
+            const sarifPath = path.join(workspacePath, 'shiplint-results.sarif');
             await writeSarifOutput(result, sarifPath);
             core.setOutput('sarif-file', sarifPath);
             core.info(`📄 SARIF output written to: ${sarifPath}`);
             // Log instructions for GitHub Security tab
             core.info('');
-            core.info('💡 To see results in the Security tab, add this step after ReviewShield:');
+            core.info('💡 To see results in the Security tab, add this step after ShipLint:');
             core.info('   - uses: github/codeql-action/upload-sarif@v3');
             core.info('     with:');
-            core.info('       sarif_file: reviewshield-results.sarif');
+            core.info('       sarif_file: shiplint-results.sarif');
         }
         else {
             // Print formatted output
-            const formatType = outputFormat === 'json' ? reviewshield_1.OutputFormat.JSON : reviewshield_1.OutputFormat.Text;
-            const formattedOutput = await (0, reviewshield_1.format)(result, formatType);
+            const formatType = outputFormat === 'json' ? shiplint_1.OutputFormat.JSON : shiplint_1.OutputFormat.Text;
+            const formattedOutput = await (0, shiplint_1.format)(result, formatType);
             core.info('');
             core.info(formattedOutput);
         }
@@ -41055,10 +41430,10 @@ async function run() {
         }
         else {
             const byLevel = {
-                critical: result.findings.filter(f => f.severity === reviewshield_1.Severity.Critical).length,
-                high: result.findings.filter(f => f.severity === reviewshield_1.Severity.High).length,
-                medium: result.findings.filter(f => f.severity === reviewshield_1.Severity.Medium).length,
-                low: result.findings.filter(f => f.severity === reviewshield_1.Severity.Low).length,
+                critical: result.findings.filter(f => f.severity === shiplint_1.Severity.Critical).length,
+                high: result.findings.filter(f => f.severity === shiplint_1.Severity.High).length,
+                medium: result.findings.filter(f => f.severity === shiplint_1.Severity.Medium).length,
+                low: result.findings.filter(f => f.severity === shiplint_1.Severity.Low).length,
             };
             core.info(`⚠️ Found ${result.findings.length} issue(s):`);
             if (byLevel.critical > 0)
@@ -41071,7 +41446,7 @@ async function run() {
                 core.info(`   🟢 Low: ${byLevel.low}`);
             // Create job summary
             await core.summary
-                .addHeading('ReviewShield Scan Results', 2)
+                .addHeading('ShipLint Scan Results', 2)
                 .addTable([
                 [{ data: 'Severity', header: true }, { data: 'Count', header: true }],
                 ['🔴 Critical', String(byLevel.critical)],
@@ -41084,16 +41459,16 @@ async function run() {
                 .addList(result.findings.map(f => `**[${f.ruleId}]** ${f.title}${f.location ? ` (${path.relative(workspacePath, f.location)})` : ''}`))
                 .write();
             if (failOnError) {
-                core.setFailed(`ReviewShield found ${result.findings.length} issue(s)`);
+                core.setFailed(`ShipLint found ${result.findings.length} issue(s)`);
             }
         }
     }
     catch (error) {
         if (error instanceof Error) {
-            core.setFailed(`ReviewShield failed: ${error.message}`);
+            core.setFailed(`ShipLint failed: ${error.message}`);
         }
         else {
-            core.setFailed('ReviewShield failed with an unknown error');
+            core.setFailed('ShipLint failed with an unknown error');
         }
     }
 }

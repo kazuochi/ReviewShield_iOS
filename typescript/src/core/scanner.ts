@@ -83,6 +83,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   // Run all rules
   const findings: Finding[] = [];
   const rulesRun: string[] = [];
+  const ruleErrors: string[] = [];
   
   for (const rule of rules) {
     try {
@@ -90,10 +91,15 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
       findings.push(...ruleFindings);
       rulesRun.push(rule.id);
     } catch (error) {
+      ruleErrors.push(rule.id);
       if (options.verbose) {
         console.error(`Error running rule ${rule.id}:`, error);
       }
     }
+  }
+  
+  if (ruleErrors.length > 0) {
+    console.warn(`⚠️  ${ruleErrors.length} rule(s) failed to run: ${ruleErrors.join(', ')}. Use --verbose for details.`);
   }
   
   const duration = Date.now() - startTime;

@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run ReviewShield
-        uses: reviewshield/action@v1
+        uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
           format: 'text'
@@ -50,7 +50,7 @@ jobs:
       
       - name: Run ReviewShield
         id: reviewshield
-        uses: reviewshield/action@v1
+        uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
           format: 'sarif'
@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Scan ${{ matrix.project }}
-        uses: reviewshield/action@v1
+        uses: Signal26AI/ShipLint/action@v1
         with:
           path: ${{ matrix.project }}
           fail-on-error: 'true'
@@ -101,14 +101,14 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Run ReviewShield (privacy rules only)
-        uses: reviewshield/action@v1
+        uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
           rules: 'missing-camera-purpose,missing-location-purpose,att-tracking-mismatch'
       
       # Or exclude specific rules
       - name: Run ReviewShield (exclude low-priority)
-        uses: reviewshield/action@v1
+        uses: Signal26AI/ShipLint/action@v1
         with:
           path: '.'
           exclude: 'ats-exception-without-justification'
