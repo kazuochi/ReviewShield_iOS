@@ -784,9 +784,37 @@
                     </div>
                 </div>
 
+                <!-- MCP Integration -->
+                <div class="mt-8 bg-surface-800 border border-accent/30 rounded-xl p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="bg-accent/15 text-accent text-xs font-bold px-2 py-1 rounded">MCP</span>
+                        <h3 class="font-semibold text-lg">AI Agent Ready via Model Context Protocol</h3>
+                    </div>
+                    <p class="text-muted text-sm mb-4">
+                        ShipLint works with Claude, Cursor, Windsurf, and any <a href="https://modelcontextprotocol.io" class="text-accent hover:text-accent-light underline underline-offset-2" target="_blank" rel="noopener noreferrer">MCP-compatible</a> AI coding agent. Your agent can scan projects, list rules, and get fix guidance — all locally.
+                    </p>
+                    <div class="grid lg:grid-cols-2 gap-4">
+                        <div class="code-block rounded-lg p-4 font-mono text-xs">
+                            <span class="text-muted"># Start MCP server</span>
+                            <div class="text-accent-light">shiplint mcp</div>
+                        </div>
+                        <div class="code-block rounded-lg p-4 font-mono text-xs overflow-x-auto">
+                            <span class="text-muted">// IDE config (Cursor, Windsurf, etc.)</span>
+                            <pre class="text-accent-light">{
+  "mcpServers": {
+    "shiplint": {
+      "command": "npx",
+      "args": ["shiplint", "mcp"]
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Agent Integration Tips -->
-                <div class="mt-8 bg-surface-800 border border-surface-600 rounded-xl p-6">
-                    <h3 class="font-semibold text-lg mb-4">Integration Tips for AI Agents</h3>
+                <div class="mt-6 bg-surface-800 border border-surface-600 rounded-xl p-6">
+                    <h3 class="font-semibold text-lg mb-4">Integration Tips</h3>
                     <div class="grid sm:grid-cols-2 gap-4 text-sm text-muted">
                         <div class="flex gap-3">
                             <span class="text-accent flex-shrink-0">→</span>
