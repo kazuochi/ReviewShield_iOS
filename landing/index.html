@@ -58,7 +58,7 @@
                 "name": "Why did Apple reject my app?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "According to Apple's 2024 App Store Transparency Report, approximately 25% of app submissions are rejected. The most common reasons include missing privacy manifests (required since iOS 17), incomplete usage description strings, entitlement mismatches, and App Transport Security exceptions without justification. ShipLint checks for the 10 most preventable rejection causes before you submit."
+                    "text": "According to Apple's 2024 App Store Transparency Report, approximately 25% of app submissions are rejected. The most common reasons include missing privacy manifests (required since iOS 17), incomplete usage description strings, entitlement mismatches, and App Transport Security exceptions without justification. ShipLint checks for the 16 most preventable rejection causes before you submit."
                 }
             },
             {
@@ -277,7 +277,7 @@
                         </div>
 
                         <p class="text-sm text-muted">
-                            Free and open source. No account required. Works with Xcode projects, Swift packages, and any iOS build system.
+                            Free and open source. No account required. Works with <strong class="text-white">Xcode projects AND Swift Package Manager</strong> (<code class="text-accent-light text-xs">Package.swift</code>) — no <code class="text-xs">.xcodeproj</code> required.
                         </p>
                     </div>
 
@@ -324,7 +324,7 @@
         <section class="border-y border-surface-600/50 bg-surface-800/50" aria-label="Key statistics about App Store rejections">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
                 <!-- GEO snippet: self-contained answer -->
-                <p class="sr-only">According to Apple's 2024 App Store Transparency Report, approximately 25% of app submissions are rejected. Each rejection cycle costs developers 10-30 minutes of upload time alone, not counting the fixes. ShipLint checks 15 rules covering the most preventable rejection causes.</p>
+                <p class="sr-only">According to Apple's 2024 App Store Transparency Report, approximately 25% of app submissions are rejected. Each rejection cycle costs developers 10-30 minutes of upload time alone, not counting the fixes. ShipLint checks 16 rules covering the most preventable rejection causes.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 text-center">
                     <div>
@@ -338,7 +338,7 @@
                         <span class="text-xs text-surface-500">before you even start fixing</span></p>
                     </div>
                     <div>
-                        <div class="stat-number text-4xl sm:text-5xl font-extrabold text-white mb-2">15 rules</div>
+                        <div class="stat-number text-4xl sm:text-5xl font-extrabold text-white mb-2">16 rules</div>
                         <p class="text-muted text-sm leading-relaxed">covering the most preventable<br>
                         <span class="text-xs text-surface-500">App Store rejection causes</span></p>
                     </div>
@@ -386,7 +386,7 @@
                 <div class="text-center mb-4">
                     <h2 id="catches-heading" class="text-3xl sm:text-4xl font-bold mb-4">What ShipLint Catches</h2>
                     <p class="text-muted text-lg max-w-2xl mx-auto mb-2">
-                        15 rules targeting the most common App Store rejection causes — the "surprise" errors that AI-generated code doesn't know to avoid.
+                        16 rules targeting the most common App Store rejection causes — the "surprise" errors that AI-generated code doesn't know to avoid.
                     </p>
                     <!-- GEO snippet -->
                     <p class="text-xs text-surface-500 max-w-xl mx-auto">
@@ -512,6 +512,22 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Rule 11: Required Reason API -->
+                    <div class="rule-card bg-surface-700 border border-accent/40 rounded-xl p-5">
+                        <div class="flex items-start gap-4">
+                            <span class="text-accent font-mono text-sm font-bold bg-accent/10 px-2 py-1 rounded flex-shrink-0">11</span>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="font-semibold">Required Reason API Detection</h3>
+                                    <span class="text-[10px] font-bold bg-accent/20 text-accent px-1.5 py-0.5 rounded uppercase">New</span>
+                                </div>
+                                <p class="text-sm text-muted mb-2">Scans your Swift source for Required Reason API usage (UserDefaults, file timestamps, disk space, boot time, etc.) and verifies matching privacy manifest declarations. The <strong class="text-white">#1 privacy-related rejection reason</strong> in 2024.</p>
+                                <span class="inline-block text-xs font-mono bg-red-500/10 text-red-400 px-2 py-0.5 rounded">ITMS-91053</span>
+                                <code class="inline-block text-xs font-mono text-surface-500 ml-2">privacy-010-required-reason-api</code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -547,8 +563,9 @@
                         </div>
                         <div class="flex-1">
                             <h3 class="font-semibold text-lg mb-3">Point it at your project</h3>
-                            <div class="code-block rounded-lg p-4 font-mono text-sm">
-                                <span class="text-muted">$</span> <span class="text-accent-light">shiplint scan ./MyApp.xcodeproj</span>
+                            <div class="code-block rounded-lg p-4 font-mono text-sm space-y-2">
+                                <div><span class="text-muted">$</span> <span class="text-accent-light">shiplint scan ./MyApp.xcodeproj</span></div>
+                                <div><span class="text-muted">$</span> <span class="text-accent-light">shiplint scan .</span> <span class="text-muted text-xs ml-2"># also works with Package.swift — no .xcodeproj needed</span></div>
                             </div>
                         </div>
                     </div>
@@ -602,7 +619,7 @@
                                 <li>• <strong class="text-white">Entitlement mismatches</strong> (<code class="text-red-400 text-xs">ITMS-90078</code>) — capabilities in code that don't match your provisioning profile</li>
                                 <li>• <strong class="text-white">App Transport Security exceptions</strong> without written justification</li>
                             </ul>
-                            <p class="mt-3">ShipLint checks for all 10 of the most preventable rejection causes before you submit.</p>
+                            <p class="mt-3">ShipLint checks for all 16 of the most preventable rejection causes before you submit.</p>
                         </div>
                     </details>
 
@@ -646,7 +663,7 @@
                             <p><strong class="text-white">Yes — in fact, that's exactly what ShipLint is designed for.</strong></p>
                             <p class="mt-3">AI coding tools like Cursor, GitHub Copilot, and Claude are excellent at generating functional Swift code. But they often miss Apple's <em>platform configuration</em> requirements — privacy manifests, entitlement declarations, usage description strings — because these aren't about code correctness, they're about App Store compliance.</p>
                             <p class="mt-3">ShipLint bridges that gap. It checks the project-level files that AI tools don't generate or configure properly, catching issues before Apple does.</p>
-                            <p class="mt-3">Just point ShipLint at your <code class="text-accent-light text-xs">.xcodeproj</code> or project directory — it doesn't matter how the code was written.</p>
+                            <p class="mt-3">Just point ShipLint at your <code class="text-accent-light text-xs">.xcodeproj</code>, <code class="text-accent-light text-xs">Package.swift</code>, or project directory — it doesn't matter how the code was written. Swift PM projects work without any <code class="text-accent-light text-xs">.xcodeproj</code> at all.</p>
                         </div>
                     </details>
 
@@ -791,7 +808,7 @@
                         <h3 class="font-semibold text-lg">AI Agent Ready via Model Context Protocol</h3>
                     </div>
                     <p class="text-muted text-sm mb-4">
-                        ShipLint works with Claude, Cursor, Windsurf, and any <a href="https://modelcontextprotocol.io" class="text-accent hover:text-accent-light underline underline-offset-2" target="_blank" rel="noopener noreferrer">MCP-compatible</a> AI coding agent. Your agent can scan projects, list rules, and get fix guidance — all locally.
+                        ShipLint works with Claude, Cursor, Windsurf, and any <a href="https://modelcontextprotocol.io" class="text-accent hover:text-accent-light underline underline-offset-2" target="_blank" rel="noopener noreferrer">MCP-compatible</a> AI coding agent. Exposes <strong class="text-white">3 tools</strong>: <code class="text-accent-light text-xs">scan</code> (run full project scan), <code class="text-accent-light text-xs">rules</code> (list all 16 rules), and <code class="text-accent-light text-xs">explain</code> (get detailed fix guidance for any issue) — all locally, no network required.
                     </p>
                     <div class="grid lg:grid-cols-2 gap-4">
                         <div class="code-block rounded-lg p-4 font-mono text-xs">
