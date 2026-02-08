@@ -10,3 +10,4 @@ export { MissingMicrophonePurposeRule } from './missing-microphone-purpose.js';
 export { MissingContactsPurposeRule } from './missing-contacts-purpose.js';
 export { MissingBluetoothPurposeRule } from './missing-bluetooth-purpose.js';
 export { MissingFaceIdPurposeRule } from './missing-face-id-purpose.js';
+export { RequiredReasonAPIRule } from './required-reason-api.js';

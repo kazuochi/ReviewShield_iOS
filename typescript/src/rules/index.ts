@@ -34,6 +34,7 @@ import { MissingLaunchStoryboardRule } from './config/missing-launch-storyboard.
 import { MissingBluetoothPurposeRule } from './privacy/missing-bluetooth-purpose.js';
 import { MissingFaceIdPurposeRule } from './privacy/missing-face-id-purpose.js';
 import { MissingSupportedOrientationsRule } from './metadata/missing-supported-orientations.js';
+import { RequiredReasonAPIRule } from './privacy/required-reason-api.js';
 
 /**
  * All available rules
@@ -54,6 +55,7 @@ export const allRules: Rule[] = [
   ATSExceptionWithoutJustificationRule,
   MissingEncryptionFlagRule,
   MissingLaunchStoryboardRule,
+  RequiredReasonAPIRule,
 ];
 
 /**
