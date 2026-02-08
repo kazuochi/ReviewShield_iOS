@@ -78,6 +78,14 @@ export interface ScanResult {
   findings: Finding[];
   rulesRun: string[];
   duration: number;
+  /** Project type detected: xcodeproj, swiftpm, both, or unknown */
+  projectType: 'xcodeproj' | 'swiftpm' | 'both' | 'unknown';
+  /** How frameworks were detected */
+  frameworkDetectionMethod: 'pbxproj' | 'import-scan' | 'both';
+  /** Framework names found (anonymous — no paths) */
+  frameworksDetected: string[];
+  /** Number of targets scanned */
+  targetCount: number;
 }
 
 /**

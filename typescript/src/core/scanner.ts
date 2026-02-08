@@ -1,8 +1,11 @@
 /**
  * Core scan engine
  */
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Rule, Finding, ScanResult, ScanContext, ScanOptions } from '../types/index.js';
 import { discoverProject, createScanContext } from '../parsers/project-parser.js';
+import type { ProjectDiscovery } from '../parsers/project-parser.js';
 import { allRules, getRulesWithValidation, getRulesExcluding } from '../rules/index.js';
 
 /**
@@ -104,13 +107,55 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   
   const duration = Date.now() - startTime;
   
+  // Determine project type and framework detection method from discovery
+  const projectType = deriveProjectType(discovery);
+  const frameworkDetectionMethod = deriveFrameworkDetectionMethod(discovery, context);
+  const frameworksDetected = [...context.linkedFrameworks].sort();
+  const targetCount = rules.length > 0 ? 1 : 0; // Currently scans main target
+  
   return {
     projectPath: options.path,
     timestamp: new Date(),
     findings,
     rulesRun,
     duration,
+    projectType,
+    frameworkDetectionMethod,
+    frameworksDetected,
+    targetCount,
   };
+}
+
+/**
+ * Derive project type from discovery info
+ */
+function deriveProjectType(discovery: ProjectDiscovery): 'xcodeproj' | 'swiftpm' | 'both' | 'unknown' {
+  const hasXcodeproj = !!discovery.pbxprojPath;
+  
+  // Check for Package.swift in project directory
+  const basePath = discovery.projectScopeDir ?? discovery.projectPath;
+  const hasPackageSwift = fs.existsSync(path.join(basePath, 'Package.swift'));
+  
+  if (hasXcodeproj && hasPackageSwift) return 'both';
+  if (hasXcodeproj) return 'xcodeproj';
+  if (hasPackageSwift) return 'swiftpm';
+  return 'unknown';
+}
+
+/**
+ * Derive how frameworks were detected
+ */
+function deriveFrameworkDetectionMethod(
+  discovery: ProjectDiscovery,
+  context: ScanContext
+): 'pbxproj' | 'import-scan' | 'both' {
+  const hasPbxproj = !!discovery.pbxprojPath;
+  // We always run import-scan (scanSwiftImports) in createScanContext
+  const hasImportScan = context.linkedFrameworks.size > 0;
+  
+  if (hasPbxproj && hasImportScan) return 'both';
+  if (hasPbxproj) return 'pbxproj';
+  return 'import-scan';
 }
 
 /**

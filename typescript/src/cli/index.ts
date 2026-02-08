@@ -10,7 +10,7 @@ import { format } from '../formatters/index.js';
 import { allRules } from '../rules/index.js';
 import { OutputFormat } from '../types/index.js';
 import { startMcpServer } from '../mcp/server.js';
-import { ping, buildPayload } from './analytics.js';
+import { ping, buildEnhancedPayload } from './analytics.js';
 import packageJson from '../../package.json';
 
 const program = new Command();
@@ -44,7 +44,16 @@ program
       console.log(output);
       
       // Anonymous analytics ping (fire-and-forget, opt-out with SHIPLINT_NO_TELEMETRY=1)
-      ping(buildPayload(packageJson.version, result.findings));
+      ping(buildEnhancedPayload({
+        version: packageJson.version,
+        findings: result.findings,
+        scanDurationMs: result.duration,
+        scanMode: 'cli',
+        projectType: result.projectType,
+        frameworkDetectionMethod: result.frameworkDetectionMethod,
+        frameworksDetected: result.frameworksDetected,
+        targetCount: result.targetCount,
+      }));
       
       // Exit with error code if critical issues found
       const hasCritical = result.findings.some(f => f.severity === 'critical');

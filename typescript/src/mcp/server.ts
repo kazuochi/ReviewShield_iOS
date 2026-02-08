@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { scan, InvalidRulesError, NoRulesError } from '../core/scanner.js';
 import { allRules, getRule } from '../rules/index.js';
 import { Severity } from '../types/index.js';
+import { ping, buildEnhancedPayload } from '../cli/analytics.js';
 import packageJson from '../../package.json';
 
 /**
@@ -86,6 +87,18 @@ export function createMcpServer(): McpServer {
           rulesRun: result.rulesRun.length,
           durationMs: result.duration,
         };
+
+        // Anonymous analytics ping (fire-and-forget)
+        ping(buildEnhancedPayload({
+          version: packageJson.version,
+          findings: result.findings,
+          scanDurationMs: result.duration,
+          scanMode: 'mcp',
+          projectType: result.projectType,
+          frameworkDetectionMethod: result.frameworkDetectionMethod,
+          frameworksDetected: result.frameworksDetected,
+          targetCount: result.targetCount,
+        }));
 
         const structuredContent = {
           findings: result.findings,
