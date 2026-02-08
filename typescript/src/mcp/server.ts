@@ -11,7 +11,30 @@ import { scan, InvalidRulesError, NoRulesError } from '../core/scanner.js';
 import { allRules, getRule } from '../rules/index.js';
 import { Severity } from '../types/index.js';
 import { ping, buildEnhancedPayload } from '../cli/analytics.js';
+import { evaluatePurposeString, getContextualSuggestion } from './sampling.js';
 import packageJson from '../../package.json';
+
+/** Rule IDs that relate to purpose strings */
+const PURPOSE_STRING_RULE_IDS = [
+  'privacy-001-missing-camera-purpose',
+  'privacy-002-missing-photo-library-purpose',
+  'privacy-003-missing-location-purpose',
+  'privacy-004-missing-microphone-purpose',
+  'privacy-005-missing-contacts-purpose',
+  'privacy-007-missing-bluetooth-purpose',
+  'privacy-008-missing-face-id-purpose',
+];
+
+/** Map rule IDs to permission names for prompts */
+const RULE_PERMISSION_MAP: Record<string, string> = {
+  'privacy-001-missing-camera-purpose': 'Camera (NSCameraUsageDescription)',
+  'privacy-002-missing-photo-library-purpose': 'Photo Library (NSPhotoLibraryUsageDescription)',
+  'privacy-003-missing-location-purpose': 'Location (NSLocationWhenInUseUsageDescription)',
+  'privacy-004-missing-microphone-purpose': 'Microphone (NSMicrophoneUsageDescription)',
+  'privacy-005-missing-contacts-purpose': 'Contacts (NSContactsUsageDescription)',
+  'privacy-007-missing-bluetooth-purpose': 'Bluetooth (NSBluetoothAlwaysUsageDescription)',
+  'privacy-008-missing-face-id-purpose': 'Face ID (NSFaceIDUsageDescription)',
+};
 
 /**
  * Create and configure the MCP server
@@ -100,8 +123,52 @@ export function createMcpServer(): McpServer {
           targetCount: result.targetCount,
         }));
 
+        // Attempt AI-powered purpose string evaluation via MCP sampling
+        const aiEvaluations: Record<string, { evaluation: string; suggestedString?: string }> = {};
+        const purposeFindings = result.findings.filter(f => PURPOSE_STRING_RULE_IDS.includes(f.ruleId));
+
+        if (purposeFindings.length > 0) {
+          for (const finding of purposeFindings) {
+            // Extract quoted purpose string from description (placeholder/empty cases)
+            const quotedMatch = finding.description.match(/placeholder text: "([^"]+)"/);
+            if (!quotedMatch) continue;
+
+            const purposeString = quotedMatch[1];
+            const permission = RULE_PERMISSION_MAP[finding.ruleId] || finding.ruleId;
+
+            try {
+              const evalResult = await evaluatePurposeString(server.server, {
+                permission,
+                purposeString,
+                detectedFrameworks: result.frameworksDetected,
+                ruleId: finding.ruleId,
+              });
+
+              if (evalResult) {
+                aiEvaluations[finding.ruleId] = {
+                  evaluation: evalResult.evaluation,
+                  suggestedString: evalResult.suggestedString,
+                };
+              }
+            } catch {
+              // Sampling failed for this finding — skip silently
+            }
+          }
+        }
+
+        // Merge AI evaluations into findings
+        const enhancedFindings = result.findings.map(f => {
+          const ai = aiEvaluations[f.ruleId];
+          if (!ai) return f;
+          return {
+            ...f,
+            aiEvaluation: ai.evaluation,
+            aiSuggestedString: ai.suggestedString,
+          };
+        });
+
         const structuredContent = {
-          findings: result.findings,
+          findings: enhancedFindings,
           summary,
         };
 
@@ -221,7 +288,24 @@ export function createMcpServer(): McpServer {
       const guidelineNumber = rule.guidelineReference.replace(/[^0-9.]/g, '');
       const guidelineUrl = `https://developer.apple.com/app-store/review/guidelines/#${guidelineNumber.split('.')[0]}`;
 
-      const structuredContent = {
+      // Attempt AI-powered contextual suggestion for purpose string rules
+      let aiContextualSuggestion: string | undefined;
+      if (PURPOSE_STRING_RULE_IDS.includes(ruleId)) {
+        try {
+          const suggestion = await getContextualSuggestion(
+            server.server,
+            ruleId,
+            [], // No frameworks context in explain — best effort
+          );
+          if (suggestion) {
+            aiContextualSuggestion = suggestion;
+          }
+        } catch {
+          // Sampling not supported — skip silently
+        }
+      }
+
+      const structuredContent: Record<string, unknown> = {
         id: rule.id,
         name: rule.name,
         description: rule.description,
@@ -231,6 +315,10 @@ export function createMcpServer(): McpServer {
         guideline: rule.guidelineReference,
         guidelineUrl,
       };
+
+      if (aiContextualSuggestion) {
+        structuredContent.aiContextualSuggestion = aiContextualSuggestion;
+      }
 
       return {
         content: [
