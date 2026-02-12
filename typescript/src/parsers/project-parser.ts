@@ -17,6 +17,35 @@ import { getMainTargetArtifacts, normalizeXcodePath, parsePbxprojTargets, getMai
 import type { Dependency, ScanContext } from '../types/index.js';
 
 /**
+ * Check if a key is defined in InfoPlist.strings files (localized privacy descriptions)
+ */
+function hasKeyInInfoPlistStrings(projectDir: string, key: string): boolean {
+  try {
+    // Search for InfoPlist.strings or infoPlist.strings files
+    const stringsFiles = findFilesRecursive(
+      projectDir,
+      (name) => name.toLowerCase() === 'infoplist.strings',
+      { maxDepth: 5 }
+    );
+    
+    for (const stringsFile of stringsFiles) {
+      try {
+        const content = fs.readFileSync(stringsFile, 'utf-8');
+        // Check for the key in .strings format: "NSCameraUsageDescription" = "...";
+        if (content.includes(`"${key}"`)) {
+          return true;
+        }
+      } catch {
+        // Skip unreadable files
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  return false;
+}
+
+/**
  * Result of project discovery
  */
 export interface ProjectDiscovery {
@@ -638,33 +667,69 @@ export function createScanContext(discovery: ProjectDiscovery): ScanContext {
       const projectName = path.basename(path.dirname(discovery.pbxprojPath)).replace('.xcodeproj', '');
       const targets = parsePbxprojTargets(content);
       const mainTarget = getMainAppTarget(targets, projectName);
-      if (mainTarget) {
-        const settings = getTargetBuildSettings(content, mainTarget);
-        // getTargetBuildSettings returns TargetBuildSettings with limited fields;
-        // we need the raw build settings, so re-parse for the selected config
-        const configLists = parseConfigurationLists(content);
-        const configs = parseBuildConfigurations(content);
-        const configList = configLists.get(mainTarget.buildConfigurationListId);
-        if (configList) {
-          // Prefer Release config
-          for (const configId of configList.buildConfigurationIds) {
+      
+      const configLists = parseConfigurationLists(content);
+      const configs = parseBuildConfigurations(content);
+      
+      // First, get project-level build settings as base
+      // Find the project-level configuration list by looking for "Build configuration list for PBXProject"
+      let projectSettings: Record<string, string> = {};
+      for (const [listId, list] of configLists) {
+        // Check if this config list is referenced by a PBXProject (not a target)
+        const commentPattern = new RegExp(listId + '\\s*/\\*\\s*Build configuration list for PBXProject');
+        if (commentPattern.test(content)) {
+          // This is the project-level config list
+          for (const configId of list.buildConfigurationIds) {
             const config = configs.get(configId);
             if (config && config.name.toLowerCase() === 'release') {
-              buildSettings = config.buildSettings;
+              projectSettings = { ...config.buildSettings };
               break;
             }
           }
-          // Fallback to first config
-          if (Object.keys(buildSettings).length === 0) {
-            for (const configId of configList.buildConfigurationIds) {
+          if (Object.keys(projectSettings).length === 0) {
+            for (const configId of list.buildConfigurationIds) {
               const config = configs.get(configId);
               if (config) {
-                buildSettings = config.buildSettings;
+                projectSettings = { ...config.buildSettings };
                 break;
               }
             }
           }
+          break;
         }
+      }
+      
+      // Then overlay target-level build settings (target overrides project)
+      if (mainTarget) {
+        const configList = configLists.get(mainTarget.buildConfigurationListId);
+        if (configList) {
+          let targetSettings: Record<string, string> = {};
+          // Prefer Release config
+          for (const configId of configList.buildConfigurationIds) {
+            const config = configs.get(configId);
+            if (config && config.name.toLowerCase() === 'release') {
+              targetSettings = config.buildSettings;
+              break;
+            }
+          }
+          // Fallback to first config
+          if (Object.keys(targetSettings).length === 0) {
+            for (const configId of configList.buildConfigurationIds) {
+              const config = configs.get(configId);
+              if (config) {
+                targetSettings = config.buildSettings;
+                break;
+              }
+            }
+          }
+          // Merge: project settings as base, target settings override
+          buildSettings = { ...projectSettings, ...targetSettings };
+        }
+      }
+      
+      // If no target found, use project-level settings alone
+      if (Object.keys(buildSettings).length === 0) {
+        buildSettings = projectSettings;
       }
     } catch (error) {
       console.warn(`Warning: Could not extract build settings: ${error}`);
@@ -735,6 +800,14 @@ export function createContextObject(
         const bsValue = this.buildSettings[`INFOPLIST_KEY_${key}`];
         if (typeof bsValue === 'string') return bsValue;
       }
+      // Fallback: check InfoPlist.strings for localized values
+      // We can't easily extract the string value from .strings files reliably,
+      // but returning a sentinel indicates it exists (rules check for undefined)
+      if (key.startsWith('NS') && key.endsWith('UsageDescription')) {
+        if (hasKeyInInfoPlistStrings(projectPath, key)) {
+          return '[localized in InfoPlist.strings]';
+        }
+      }
       return undefined;
     },
     
@@ -759,7 +832,11 @@ export function createContextObject(
       if (key in this.infoPlist) return true;
       // Fallback: check INFOPLIST_KEY_* build settings when generating Info.plist
       if (this.generatesInfoPlist()) {
-        return (`INFOPLIST_KEY_${key}`) in this.buildSettings;
+        if ((`INFOPLIST_KEY_${key}`) in this.buildSettings) return true;
+      }
+      // Fallback: check InfoPlist.strings for localized privacy descriptions
+      if (key.startsWith('NS') && key.endsWith('UsageDescription')) {
+        if (hasKeyInInfoPlistStrings(projectPath, key)) return true;
       }
       return false;
     },
@@ -804,6 +881,44 @@ export function createContextObject(
       const productType = this.buildSettings['PRODUCT_TYPE'];
       if (productType && productType.includes('app-extension')) {
         return true;
+      }
+      return false;
+    },
+
+    isMacOSOnly(): boolean {
+      // Check SDKROOT build setting
+      const sdkroot = this.buildSettings['SDKROOT'];
+      if (sdkroot === 'macosx') return true;
+      // Check SUPPORTED_PLATFORMS
+      const platforms = this.buildSettings['SUPPORTED_PLATFORMS'];
+      if (platforms && platforms.includes('macosx') && !platforms.includes('iphone')) {
+        return true;
+      }
+      // If no explicit setting, check if any iOS-related settings exist
+      if (sdkroot === 'iphoneos' || sdkroot === 'auto') return false;
+      // Check for iOS deployment target
+      if (this.buildSettings['IPHONEOS_DEPLOYMENT_TARGET']) return false;
+      // If we have MACOSX_DEPLOYMENT_TARGET but no iOS target, it's macOS-only
+      if (this.buildSettings['MACOSX_DEPLOYMENT_TARGET'] && !this.buildSettings['IPHONEOS_DEPLOYMENT_TARGET']) {
+        return true;
+      }
+      return false;
+    },
+
+    isFrameworkTarget(): boolean {
+      const productType = this.buildSettings['PRODUCT_TYPE'];
+      if (productType) {
+        return productType.includes('framework') || 
+               productType.includes('library') ||
+               productType.includes('bundle') ||
+               productType.includes('tool');
+      }
+      // Heuristic: if Info.plist path contains "Kit/" or "Framework/" it's likely a framework
+      if (infoPlistPath) {
+        const normalizedPath = infoPlistPath.replace(/\\/g, '/');
+        if (/\/(.*Kit|.*Framework|.*Lib|.*SDK)\//i.test(normalizedPath)) {
+          return true;
+        }
       }
       return false;
     },

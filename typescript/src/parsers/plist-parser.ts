@@ -106,6 +106,11 @@ export const knownUsageDescriptionKeys: Record<string, string[]> = {
  * Checks if a usage description appears to be a placeholder
  */
 export function isPlaceholder(value: string): boolean {
+  // Localized strings from InfoPlist.strings are not placeholders
+  if (value === '[localized in InfoPlist.strings]') {
+    return false;
+  }
+
   const lowercased = value.toLowerCase().trim();
   
   // Empty or very short (less than 20 chars is too generic)
@@ -114,18 +119,19 @@ export function isPlaceholder(value: string): boolean {
   }
   
   // Obvious placeholder patterns - always flag these
-  const obviousPlaceholders = [
-    'lorem ipsum',
-    'todo',
-    'fixme',
-    'placeholder',
-    'description here',
-    'add description',
-    'xxx',
-    '...',
+  // Use word boundary regex to avoid false positives (e.g., "Mastodon" matching "todo")
+  const obviousPlaceholderPatterns = [
+    /lorem ipsum/,
+    /\btodo\b/,
+    /\bfixme\b/,
+    /\bplaceholder\b/,
+    /description here/,
+    /add description/,
+    /\bxxx\b/,
+    /^\.\.\.$/,
   ];
   
-  if (obviousPlaceholders.some(p => lowercased.includes(p))) {
+  if (obviousPlaceholderPatterns.some(p => p.test(lowercased))) {
     return true;
   }
   
