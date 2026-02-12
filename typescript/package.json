@@ -1,6 +1,6 @@
 {
   "name": "shiplint",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Catch App Store rejections before they happen. Pre-submission linter for iOS apps.",
   "main": "dist/index.js",
   "bin": {
