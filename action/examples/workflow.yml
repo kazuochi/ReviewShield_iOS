@@ -1,33 +1,66 @@
-# ShipLint GitHub Action - Example Workflow
-# 
-# Add this file to your repo at: .github/workflows/shiplint.yml
+# ShipLint Pro — Example Workflow
+# Add to your repo at: .github/workflows/shiplint.yml
 
 name: ShipLint
 
 on:
   pull_request:
     branches: [main, develop]
-  push:
-    branches: [main]
+    paths:
+      - '**/*.swift'
+      - '**/*.m'
+      - '**/*.h'
+      - '**/*.plist'
+      - '**/*.pbxproj'
+      - '**/*.xcworkspace/**'
+      - '**/*.xcodeproj/**'
+      - '**/*.entitlements'
+      - '**/*.storyboard'
+      - '**/*.xib'
+
+permissions:
+  contents: read
+  pull-requests: write   # Required for PR comments
 
 jobs:
-  scan:
-    name: Scan for App Store Review Issues
+  shiplint:
+    name: ShipLint Scan
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v4
+
       - name: Run ShipLint
         uses: Signal26AI/ShipLint/action@v1
         with:
-          path: '.'
-          format: 'text'
-          fail-on-error: 'true'
+          # Auto-detects Xcode project. Set explicitly if needed:
+          # project-path: 'MyApp.xcodeproj'
+          severity-threshold: 'critical'   # Fail on critical only
+          comment: 'true'                  # Post results to PR
 
 ---
-# Alternative: SARIF output for GitHub Security tab
+# Strict mode — fail on medium and above
+
+name: ShipLint (Strict)
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  shiplint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Signal26AI/ShipLint/action@v1
+        with:
+          severity-threshold: 'medium'
+          comment: 'true'
+
+---
+# SARIF output for GitHub Security tab
 
 name: ShipLint (Security Tab)
 
@@ -36,79 +69,52 @@ on:
   push:
     branches: [main]
 
+permissions:
+  security-events: write
+  contents: read
+  pull-requests: write
+
 jobs:
-  scan:
-    name: ShipLint Security Scan
+  shiplint:
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write  # Required for uploading SARIF
-      contents: read
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
+      - uses: actions/checkout@v4
+
       - name: Run ShipLint
         id: shiplint
         uses: Signal26AI/ShipLint/action@v1
         with:
-          path: '.'
           format: 'sarif'
-          fail-on-error: 'false'  # Don't fail, let Security tab show results
-      
-      - name: Upload SARIF to GitHub Security
+          severity-threshold: 'critical'
+          comment: 'true'
+
+      - name: Upload SARIF
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: shiplint-results.sarif
 
 ---
-# Alternative: Monorepo with multiple iOS projects
+# Monorepo with explicit project path
 
 name: ShipLint (Monorepo)
 
 on:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   scan:
-    name: Scan iOS Projects
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [apps/ios-app, apps/watchos-app]
-    
+        project: ['apps/iOS/MyApp.xcodeproj', 'apps/watchOS/Watch.xcodeproj']
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Scan ${{ matrix.project }}
-        uses: Signal26AI/ShipLint/action@v1
+      - uses: Signal26AI/ShipLint/action@v1
         with:
-          path: ${{ matrix.project }}
-          fail-on-error: 'true'
-
----
-# Alternative: Custom rule selection
-
-name: ShipLint (Custom Rules)
-
-on:
-  pull_request:
-
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Run ShipLint (privacy rules only)
-        uses: Signal26AI/ShipLint/action@v1
-        with:
-          path: '.'
-          rules: 'privacy-001-missing-camera-purpose,privacy-002-missing-location-purpose,privacy-003-att-tracking-mismatch'
-      
-      # Or exclude specific rules
-      - name: Run ShipLint (exclude low-priority)
-        uses: Signal26AI/ShipLint/action@v1
-        with:
-          path: '.'
-          exclude: 'config-001-ats-exception-without-justification'
+          project-path: ${{ matrix.project }}
+          severity-threshold: 'high'

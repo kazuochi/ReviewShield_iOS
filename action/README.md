@@ -1,16 +1,22 @@
 # ShipLint GitHub Action
 
-🛡️ **Scan iOS projects for App Store Review Guideline issues in CI/CD**
+🛡️ **Scan iOS projects for App Store Review Guideline issues on every pull request.**
 
-ShipLint catches common App Store rejection reasons before you submit, saving days of review cycles.
+ShipLint catches common App Store rejection reasons before you submit — saving days of review cycles. The GitHub Action runs automatically on PRs that touch iOS project files, posts a formatted comment with results, and fails the check on critical issues.
 
 ## Quick Start
 
-Add to your workflow (`.github/workflows/shiplint.yml`):
+Add to `.github/workflows/shiplint.yml`:
 
 ```yaml
 name: ShipLint
-on: [pull_request]
+on:
+  pull_request:
+    paths: ['**/*.swift', '**/*.plist', '**/*.pbxproj', '**/*.entitlements']
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   scan:
@@ -19,101 +25,108 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Signal26AI/ShipLint/action@v1
         with:
-          path: '.'
+          severity-threshold: 'critical'
+          comment: 'true'
 ```
+
+That's it. ShipLint auto-detects your Xcode project and scans it.
 
 ## Inputs
 
 | Input | Description | Default |
 |-------|-------------|---------|
-| `path` | Path to scan (relative to repo root) | `.` |
+| `path` | Path to scan (relative to repo root) | Auto-detect |
+| `project-path` | Explicit `.xcodeproj` / `.xcworkspace` path | Auto-detect |
+| `severity-threshold` | Minimum severity to fail: `critical`, `high`, `medium`, `low`, `info` | `critical` |
+| `comment` | Post scan results as a PR comment | `true` |
 | `format` | Output format: `text`, `json`, `sarif` | `text` |
-| `fail-on-error` | Fail the action if issues found | `true` |
-| `rules` | Comma-separated rule IDs to run (empty = all) | `` |
-| `exclude` | Comma-separated rule IDs to exclude | `` |
+| `fail-on-error` | Fail the check when issues meet the threshold | `true` |
+| `rules` | Comma-separated rule IDs to run (empty = all) | All |
+| `exclude` | Comma-separated rule IDs to exclude | None |
+| `github-token` | Token for PR comments | `${{ github.token }}` |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
 | `findings-count` | Number of issues found |
-| `sarif-file` | Path to SARIF file (when format=sarif) |
-| `exit-code` | 0 = clean, 1 = issues found |
+| `sarif-file` | Path to SARIF file (when `format=sarif`) |
+| `exit-code` | `0` = clean, `1` = issues found |
 
-## Features
+## How It Works
 
-### 📝 Inline Annotations
+1. **Auto-detects** your `.xcworkspace` or `.xcodeproj` (or use `project-path`)
+2. **Runs `shiplint scan`** against the project
+3. **Creates GitHub annotations** — inline warnings/errors on the PR diff
+4. **Posts a PR comment** with a summary table and per-finding details
+5. **Sets check status** — fails if issues meet your `severity-threshold`
 
-ShipLint creates inline annotations on your PR, showing exactly where issues are:
+### Severity Behavior
 
-- 🔴 **Error** - Critical/High severity (likely rejection)
-- 🟡 **Warning** - Medium severity (may cause rejection)
-- ℹ️ **Notice** - Low severity (best practice)
+| Threshold | Fails on | Passes with warnings |
+|-----------|----------|---------------------|
+| `critical` (default) | 🔴 Critical | 🟠🟡🟢 High, Medium, Low |
+| `high` | 🔴🟠 Critical, High | 🟡🟢 Medium, Low |
+| `medium` | 🔴🟠🟡 Critical, High, Medium | 🟢 Low |
+| `low` | All issues | — |
 
-### 📊 Job Summary
+## PR Comment
 
-Every run creates a summary table showing:
-- Issue counts by severity
-- List of all findings with locations
-- Quick links to documentation
+When `comment: true`, ShipLint posts (or updates) a single comment on the PR:
 
-### 🔒 Security Tab Integration
+- ✅ **All Clear** when no issues found
+- ❌ **Issues Found** with severity breakdown table
+- Per-finding details with rule ID, description, and fix guidance
+- Collapsible details when >5 findings
 
-Use SARIF output to see results in GitHub's Security tab:
-
-```yaml
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      
-      - uses: Signal26AI/ShipLint/action@v1
-        with:
-          format: 'sarif'
-          fail-on-error: 'false'
-      
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: shiplint-results.sarif
-```
-
-## Available Rules
-
-ShipLint checks for common rejection reasons:
-
-| Rule ID | Description |
-|---------|-------------|
-| `privacy-001-missing-camera-purpose` | Camera usage without `NSCameraUsageDescription` |
-| `privacy-002-missing-location-purpose` | Location usage without a purpose string |
-| `privacy-003-att-tracking-mismatch` | Tracking SDKs without ATT / purpose string |
-| `privacy-004-missing-photo-library-purpose` | Photo library usage without purpose string |
-| `privacy-005-missing-microphone-purpose` | Microphone usage without purpose string |
-| `privacy-006-missing-contacts-purpose` | Contacts usage without purpose string |
-| `privacy-007-location-always-unjustified` | Always-on location without justification |
-| `privacy-008-missing-bluetooth-purpose` | Bluetooth usage without purpose string |
-| `privacy-009-missing-face-id-purpose` | Face ID usage without purpose string |
-| `auth-001-third-party-login-no-siwa` | Third‑party login without Sign in with Apple |
-| `metadata-001-missing-privacy-manifest` | Missing `PrivacyInfo.xcprivacy` when required |
-| `metadata-002-missing-supported-orientations` | Missing supported orientations config |
-| `config-001-ats-exception-without-justification` | ATS exceptions without justification |
-| `config-002-missing-encryption-flag` | Missing export compliance encryption flag |
-| `config-003-missing-launch-storyboard` | Missing launch storyboard config |
+The comment is updated on each push — no duplicate comments.
 
 ## Examples
 
-### Scan specific path
+### Only scan on iOS file changes
+
+```yaml
+on:
+  pull_request:
+    paths:
+      - '**/*.swift'
+      - '**/*.m'
+      - '**/*.plist'
+      - '**/*.pbxproj'
+      - '**/*.entitlements'
+```
+
+### Strict mode — fail on medium+
 
 ```yaml
 - uses: Signal26AI/ShipLint/action@v1
   with:
-    path: 'ios/MyApp'
+    severity-threshold: 'medium'
 ```
 
-### Run specific rules only
+### Monorepo — scan specific project
+
+```yaml
+- uses: Signal26AI/ShipLint/action@v1
+  with:
+    project-path: 'apps/iOS/MyApp.xcodeproj'
+```
+
+### SARIF for GitHub Security tab
+
+```yaml
+- uses: Signal26AI/ShipLint/action@v1
+  id: shiplint
+  with:
+    format: 'sarif'
+
+- uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: shiplint-results.sarif
+```
+
+### Custom rules
 
 ```yaml
 - uses: Signal26AI/ShipLint/action@v1
@@ -121,54 +134,10 @@ ShipLint checks for common rejection reasons:
     rules: 'privacy-001-missing-camera-purpose,privacy-002-missing-location-purpose'
 ```
 
-### Exclude rules
+## Permissions
 
-```yaml
-- uses: Signal26AI/ShipLint/action@v1
-  with:
-    exclude: 'config-001-ats-exception-without-justification'
-```
-
-### Don't fail on issues (report only)
-
-```yaml
-- uses: Signal26AI/ShipLint/action@v1
-  with:
-    fail-on-error: 'false'
-```
-
-### Monorepo with multiple projects
-
-```yaml
-jobs:
-  scan:
-    strategy:
-      matrix:
-        project: [apps/ios, apps/watchos]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Signal26AI/ShipLint/action@v1
-        with:
-          path: ${{ matrix.project }}
-```
-
-## Why Use ShipLint?
-
-App Store rejections cost time:
-- 🕐 Average review time: 24-48 hours
-- 🔄 Multiple rounds for common issues
-- 😤 Frustrating for teams shipping fast
-
-ShipLint catches issues **before** you submit:
-- ✅ Privacy permission descriptions
-- ✅ Sign in with Apple requirements  
-- ✅ Privacy manifest compliance
-- ✅ App Transport Security configuration
+The action needs `pull-requests: write` to post comments. If you don't want comments, set `comment: false` and you only need `contents: read`.
 
 ## License
 
 MIT
-
-## Contributing
-
-Issues and PRs welcome at [ShipLint](https://github.com/Signal26AI/ShipLint)

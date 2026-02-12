@@ -8,15 +8,27 @@ branding:
 
 inputs:
   path:
-    description: 'Path to scan (relative to repository root)'
+    description: 'Path to scan (relative to repository root). Leave empty to auto-detect Xcode project.'
     required: false
-    default: '.'
+    default: ''
+  project-path:
+    description: 'Explicit path to .xcodeproj or .xcworkspace. When empty, ShipLint auto-detects.'
+    required: false
+    default: ''
   format:
     description: 'Output format: text, json, sarif'
     required: false
     default: 'text'
+  severity-threshold:
+    description: 'Minimum severity to fail the check: critical, high, medium, low, info'
+    required: false
+    default: 'critical'
+  comment:
+    description: 'Post scan results as a PR comment (requires pull_request trigger)'
+    required: false
+    default: 'true'
   fail-on-error:
-    description: 'Fail the action if any issues are found'
+    description: 'Fail the action if issues at or above severity-threshold are found'
     required: false
     default: 'true'
   rules:
@@ -27,6 +39,10 @@ inputs:
     description: 'Comma-separated list of rule IDs to exclude'
     required: false
     default: ''
+  github-token:
+    description: 'GitHub token for posting PR comments. Defaults to GITHUB_TOKEN.'
+    required: false
+    default: '${{ github.token }}'
 
 outputs:
   findings-count:
