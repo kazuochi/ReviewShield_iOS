@@ -33,6 +33,7 @@ function makeResult(findings: Finding[]): ScanResult {
     projectPath: '/test/project',
     timestamp: new Date('2026-01-01'),
     findings,
+    suppressedFindings: [],
     rulesRun: ['test-001'],
     duration: 100,
     projectType: 'xcodeproj',

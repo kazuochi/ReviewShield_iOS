@@ -7,6 +7,7 @@ import type { Rule, Finding, ScanResult, ScanContext, ScanOptions } from '../typ
 import { discoverProject, createScanContext } from '../parsers/project-parser.js';
 import type { ProjectDiscovery } from '../parsers/project-parser.js';
 import { allRules, getRulesWithValidation, getRulesExcluding } from '../rules/index.js';
+import { applySuppression } from './suppression.js';
 
 /**
  * Error thrown when invalid rule IDs are specified
@@ -107,6 +108,9 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   
   const duration = Date.now() - startTime;
   
+  // Apply suppression (inline comments + .shiplintignore)
+  const { activeFindings, suppressedFindings } = applySuppression(findings, options.path);
+  
   // Determine project type and framework detection method from discovery
   const projectType = deriveProjectType(discovery);
   const frameworkDetectionMethod = deriveFrameworkDetectionMethod(discovery, context);
@@ -116,7 +120,8 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   return {
     projectPath: options.path,
     timestamp: new Date(),
-    findings,
+    findings: activeFindings,
+    suppressedFindings,
     rulesRun,
     duration,
     projectType,

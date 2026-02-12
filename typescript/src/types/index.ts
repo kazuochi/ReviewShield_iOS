@@ -64,9 +64,15 @@ export interface Finding {
   title: string;
   description: string;
   location?: string;
+  /** Line number in the source file (1-indexed) */
+  line?: number;
   guideline: string;
   fixGuidance: string;
   documentationURL?: string;
+  /** Whether this finding was suppressed */
+  suppressed?: boolean;
+  /** Reason for suppression */
+  suppressionReason?: string;
 }
 
 /**
@@ -76,6 +82,7 @@ export interface ScanResult {
   projectPath: string;
   timestamp: Date;
   findings: Finding[];
+  suppressedFindings: Finding[];
   rulesRun: string[];
   duration: number;
   /** Project type detected: xcodeproj, swiftpm, both, or unknown */
@@ -174,4 +181,5 @@ export interface ScanOptions {
   verbose?: boolean;
   rules?: string[];
   exclude?: string[];
+  showSuppressed?: boolean;
 }

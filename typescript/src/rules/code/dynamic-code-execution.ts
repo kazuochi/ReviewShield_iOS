@@ -158,54 +158,48 @@ export const DynamicCodeExecutionRule: Rule = {
 
     const findings: Finding[] = [];
 
-    // Group by kind
-    const jsEvals = detections.filter(d => d.kind === 'js-eval');
-    if (jsEvals.length > 0) {
-      const files = [...new Set(jsEvals.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'JavaScript Evaluation at Runtime',
-        description: `JSContext.evaluateScript detected in ${files.length} file(s): ${files.slice(0, 3).join(', ')}. ` +
-          `Executing dynamically downloaded JavaScript code can cause rejection.`,
-        location: files[0],
-        fixGuidance: 'If using JavaScriptCore for app logic, ensure scripts are bundled with the app binary, not downloaded at runtime. Consider using native Swift/ObjC instead.',
-      }));
-    }
-
-    const dlopenDets = detections.filter(d => d.kind === 'dlopen' || d.kind === 'dlsym');
-    if (dlopenDets.length > 0) {
-      const files = [...new Set(dlopenDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'Dynamic Library Loading (dlopen/dlsym)',
-        description: `dlopen/dlsym calls detected in ${files.length} file(s): ${files.slice(0, 3).join(', ')}. ` +
-          `Loading executable code at runtime violates App Store guidelines.`,
-        location: files[0],
-        fixGuidance: 'Remove dlopen/dlsym calls. Link frameworks at build time instead of loading them dynamically at runtime.',
-      }));
-    }
-
-    const nsclassDets = detections.filter(d => d.kind === 'nsclass-suspicious');
-    if (nsclassDets.length > 0) {
-      const classes = [...new Set(nsclassDets.map(d => d.match))];
-      const files = [...new Set(nsclassDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeCustomFinding(this, Severity.Medium, Confidence.Medium, {
-        title: 'Suspicious NSClassFromString Usage',
-        description: `NSClassFromString used with non-standard classes (${classes.slice(0, 5).join(', ')}). ` +
-          `This may indicate runtime class resolution for code loading. Found in: ${files.slice(0, 3).join(', ')}`,
-        location: files[0],
-        fixGuidance: 'Use direct class references instead of NSClassFromString where possible. If used for optional framework detection, ensure the class is from a public Apple framework.',
-      }));
-    }
-
-    const bundleLoads = detections.filter(d => d.kind === 'bundle-load');
-    if (bundleLoads.length > 0) {
-      const files = [...new Set(bundleLoads.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeCustomFinding(this, Severity.High, Confidence.Medium, {
-        title: 'Dynamic Bundle Loading',
-        description: `NSBundle.load() or equivalent detected in ${files.length} file(s): ${files.slice(0, 3).join(', ')}. ` +
-          `Loading executable bundles at runtime may violate App Store guidelines.`,
-        location: files[0],
-        fixGuidance: 'Link frameworks at build time. If loading resource bundles (not code), this is fine — verify the bundle contains only resources.',
-      }));
+    // Emit per-detection findings with line numbers for suppression support
+    for (const det of detections) {
+      const relFile = path.relative(context.projectPath, det.file);
+      switch (det.kind) {
+        case 'js-eval':
+          findings.push(makeFinding(this, {
+            title: 'JavaScript Evaluation at Runtime',
+            description: `JSContext.evaluateScript detected in ${relFile}:${det.line}. Executing dynamically downloaded JavaScript code can cause rejection.`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'If using JavaScriptCore for app logic, ensure scripts are bundled with the app binary, not downloaded at runtime. Consider using native Swift/ObjC instead.',
+          }));
+          break;
+        case 'dlopen':
+        case 'dlsym':
+          findings.push(makeFinding(this, {
+            title: 'Dynamic Library Loading (dlopen/dlsym)',
+            description: `dlopen/dlsym call detected in ${relFile}:${det.line}. Loading executable code at runtime violates App Store guidelines.`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Remove dlopen/dlsym calls. Link frameworks at build time instead of loading them dynamically at runtime.',
+          }));
+          break;
+        case 'nsclass-suspicious':
+          findings.push(makeCustomFinding(this, Severity.Medium, Confidence.Medium, {
+            title: 'Suspicious NSClassFromString Usage',
+            description: `NSClassFromString used with non-standard class (${det.match}) in ${relFile}:${det.line}. This may indicate runtime class resolution for code loading.`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Use direct class references instead of NSClassFromString where possible. If used for optional framework detection, ensure the class is from a public Apple framework.',
+          }));
+          break;
+        case 'bundle-load':
+          findings.push(makeCustomFinding(this, Severity.High, Confidence.Medium, {
+            title: 'Dynamic Bundle Loading',
+            description: `NSBundle.load() or equivalent detected in ${relFile}:${det.line}. Loading executable bundles at runtime may violate App Store guidelines.`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Link frameworks at build time. If loading resource bundles (not code), this is fine — verify the bundle contains only resources.',
+          }));
+          break;
+      }
     }
 
     return findings;

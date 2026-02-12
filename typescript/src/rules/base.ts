@@ -12,6 +12,7 @@ export function makeFinding(
     title?: string;
     description: string;
     location?: string;
+    line?: number;
     fixGuidance: string;
     documentationURL?: string;
   }
@@ -23,6 +24,7 @@ export function makeFinding(
     title: options.title ?? rule.name,
     description: options.description,
     location: options.location,
+    line: options.line,
     guideline: rule.guidelineReference,
     fixGuidance: options.fixGuidance,
     documentationURL: options.documentationURL,
@@ -40,6 +42,7 @@ export function makeCustomFinding(
     title: string;
     description: string;
     location?: string;
+    line?: number;
     fixGuidance: string;
     documentationURL?: string;
   }
@@ -51,6 +54,7 @@ export function makeCustomFinding(
     title: options.title,
     description: options.description,
     location: options.location,
+    line: options.line,
     guideline: rule.guidelineReference,
     fixGuidance: options.fixGuidance,
     documentationURL: options.documentationURL,

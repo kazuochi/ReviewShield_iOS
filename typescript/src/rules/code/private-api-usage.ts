@@ -182,63 +182,48 @@ export const PrivateAPIUsageRule: Rule = {
 
     const findings: Finding[] = [];
 
-    // Group UIWebView detections
-    const uiwebviewDets = detections.filter(d => d.kind === 'uiwebview');
-    if (uiwebviewDets.length > 0) {
-      const files = [...new Set(uiwebviewDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'UIWebView Usage (Deprecated & Rejected)',
-        description: `UIWebView is deprecated since iOS 12 and Apple rejects apps that reference it. ` +
-          `Found in ${files.length} file(s): ${files.slice(0, 3).join(', ')}` +
-          (files.length > 3 ? ` and ${files.length - 3} more` : ''),
-        location: files[0],
-        fixGuidance: 'Replace all UIWebView usage with WKWebView. Also check your dependencies — some older pods still reference UIWebView.',
-        documentationURL: 'https://developer.apple.com/documentation/webkit/wkwebview',
-      }));
-    }
-
-    // Group private KVC detections
-    const kvcDets = detections.filter(d => d.kind === 'private-kvc');
-    if (kvcDets.length > 0) {
-      const props = [...new Set(kvcDets.map(d => d.match))];
-      const files = [...new Set(kvcDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'Private UIKit Property Access via KVC',
-        description: `Accessing private UIKit properties (${props.join(', ')}) via valueForKey/setValue:forKey ` +
-          `will cause App Store rejection. Found in: ${files.slice(0, 3).join(', ')}` +
-          (files.length > 3 ? ` and ${files.length - 3} more` : ''),
-        location: files[0],
-        fixGuidance: 'Use public API alternatives instead of KVC on private properties. For placeholder color, use attributedPlaceholder. For search fields, use searchTextField (iOS 13+).',
-      }));
-    }
-
-    // Group private import detections
-    const importDets = detections.filter(d => d.kind === 'private-import');
-    if (importDets.length > 0) {
-      const files = [...new Set(importDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'Private Framework Import',
-        description: `Importing private/undocumented Apple frameworks will cause App Store rejection. ` +
-          `Found in: ${files.slice(0, 3).join(', ')}` +
-          (files.length > 3 ? ` and ${files.length - 3} more` : ''),
-        location: files[0],
-        fixGuidance: 'Remove imports of private Apple frameworks and use only public APIs.',
-      }));
-    }
-
-    // Group private selector detections
-    const selectorDets = detections.filter(d => d.kind === 'private-selector');
-    if (selectorDets.length > 0) {
-      const selectors = [...new Set(selectorDets.map(d => d.match))];
-      const files = [...new Set(selectorDets.map(d => path.relative(context.projectPath, d.file)))];
-      findings.push(makeFinding(this, {
-        title: 'Private Selector Usage',
-        description: `Using private selectors (${selectors.join(', ')}) via objc_msgSend or NSSelectorFromString ` +
-          `will cause App Store rejection. Found in: ${files.slice(0, 3).join(', ')}` +
-          (files.length > 3 ? ` and ${files.length - 3} more` : ''),
-        location: files[0],
-        fixGuidance: 'Replace private selector calls with equivalent public API methods.',
-      }));
+    // Emit per-detection findings with line numbers for suppression support
+    for (const det of detections) {
+      const relFile = path.relative(context.projectPath, det.file);
+      switch (det.kind) {
+        case 'uiwebview':
+          findings.push(makeFinding(this, {
+            title: 'UIWebView Usage (Deprecated & Rejected)',
+            description: `UIWebView is deprecated since iOS 12 and Apple rejects apps that reference it. Found in: ${relFile}:${det.line}`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Replace all UIWebView usage with WKWebView. Also check your dependencies — some older pods still reference UIWebView.',
+            documentationURL: 'https://developer.apple.com/documentation/webkit/wkwebview',
+          }));
+          break;
+        case 'private-kvc':
+          findings.push(makeFinding(this, {
+            title: 'Private UIKit Property Access via KVC',
+            description: `Accessing private UIKit property (${det.match}) via valueForKey/setValue:forKey will cause App Store rejection. Found in: ${relFile}:${det.line}`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Use public API alternatives instead of KVC on private properties. For placeholder color, use attributedPlaceholder. For search fields, use searchTextField (iOS 13+).',
+          }));
+          break;
+        case 'private-import':
+          findings.push(makeFinding(this, {
+            title: 'Private Framework Import',
+            description: `Importing private/undocumented Apple frameworks will cause App Store rejection. Found in: ${relFile}:${det.line}`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Remove imports of private Apple frameworks and use only public APIs.',
+          }));
+          break;
+        case 'private-selector':
+          findings.push(makeFinding(this, {
+            title: 'Private Selector Usage',
+            description: `Using private selector (${det.match}) via objc_msgSend or NSSelectorFromString will cause App Store rejection. Found in: ${relFile}:${det.line}`,
+            location: relFile,
+            line: det.line,
+            fixGuidance: 'Replace private selector calls with equivalent public API methods.',
+          }));
+          break;
+      }
     }
 
     return findings;

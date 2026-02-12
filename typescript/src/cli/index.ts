@@ -28,6 +28,7 @@ program
   .option('-v, --verbose', 'Show verbose output', false)
   .option('-r, --rules <rules...>', 'Only run specific rules (by ID)')
   .option('-e, --exclude <rules...>', 'Exclude specific rules (by ID)')
+  .option('--show-suppressed', 'Show suppressed findings in output', false)
   .action(async (path: string, options) => {
     try {
       const outputFormat = parseOutputFormat(options.format);
