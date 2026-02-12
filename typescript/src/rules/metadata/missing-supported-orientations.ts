@@ -26,10 +26,21 @@ export const MissingSupportedOrientationsRule: Rule = {
       return [];
     }
 
+    // macOS apps don't use UISupportedInterfaceOrientations
+    if (context.isMacOSOnly()) {
+      return [];
+    }
+
+    // Framework/library targets don't need orientation declarations
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
+
     const orientations = context.plistArray('UISupportedInterfaceOrientations');
 
-    // Modern Xcode projects (14+) with GENERATE_INFOPLIST_FILE = YES use build settings
-    if (orientations === undefined && context.generatesInfoPlist()) {
+    // Modern Xcode projects (14+) use build settings for orientations
+    // Check regardless of GENERATE_INFOPLIST_FILE
+    if (orientations === undefined) {
       if (context.hasBuildSetting('INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone') ||
           context.hasBuildSetting('INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad') ||
           context.hasBuildSetting('INFOPLIST_KEY_UISupportedInterfaceOrientations')) {

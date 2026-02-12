@@ -26,6 +26,16 @@ export const MissingLaunchStoryboardRule: Rule = {
       return [];
     }
 
+    // macOS apps don't need launch storyboards
+    if (context.isMacOSOnly()) {
+      return [];
+    }
+
+    // Framework/library targets don't need launch storyboards
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
+
     // Only flag if the key is completely absent.
     // An empty string is valid (SwiftUI lifecycle apps use empty UILaunchStoryboardName).
     if (context.hasPlistKey('UILaunchStoryboardName')) {
@@ -37,11 +47,17 @@ export const MissingLaunchStoryboardRule: Rule = {
       return [];
     }
 
-    // Modern Xcode projects (14+) with GENERATE_INFOPLIST_FILE = YES use build settings
-    // instead of a source Info.plist for launch screen configuration
-    if (context.generatesInfoPlist()) {
-      if (context.hasBuildSetting('INFOPLIST_KEY_UILaunchScreen_Generation') ||
-          context.hasBuildSetting('INFOPLIST_KEY_UILaunchStoryboardName')) {
+    // Modern Xcode projects (14+) use build settings for launch screen configuration
+    // Check regardless of GENERATE_INFOPLIST_FILE since some projects set these build
+    // settings even with a custom Info.plist
+    if (context.hasBuildSetting('INFOPLIST_KEY_UILaunchScreen_Generation') ||
+        context.hasBuildSetting('INFOPLIST_KEY_UILaunchStoryboardName')) {
+      return [];
+    }
+    // Also check SDK-specific variants (e.g., [sdk=iphoneos*])
+    for (const key of Object.keys(context.buildSettings)) {
+      if (key.startsWith('INFOPLIST_KEY_UILaunchScreen_Generation') ||
+          key.startsWith('INFOPLIST_KEY_UILaunchStoryboardName')) {
         return [];
       }
     }

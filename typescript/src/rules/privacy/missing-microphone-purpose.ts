@@ -26,6 +26,10 @@ export const MissingMicrophonePurposeRule: Rule = {
   guidelineReference: '5.1.1',
 
   async evaluate(context: ScanContext): Promise<Finding[]> {
+    // Framework/library targets do not need app-level usage descriptions
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
     // Check if any audio recording framework is linked
     const detectedFrameworks = MICROPHONE_FRAMEWORKS.filter(f => context.hasFramework(f));
     

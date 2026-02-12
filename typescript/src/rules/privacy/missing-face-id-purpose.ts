@@ -23,6 +23,10 @@ export const MissingFaceIdPurposeRule: Rule = {
   guidelineReference: '5.1.1',
 
   async evaluate(context: ScanContext): Promise<Finding[]> {
+    // Framework/library targets do not need app-level usage descriptions
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
     const detectedFrameworks = FACE_ID_FRAMEWORKS.filter(f => context.hasFramework(f));
 
     if (detectedFrameworks.length === 0) {

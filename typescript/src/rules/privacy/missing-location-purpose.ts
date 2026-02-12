@@ -27,6 +27,10 @@ export const MissingLocationPurposeRule: Rule = {
   guidelineReference: '5.1.1',
 
   async evaluate(context: ScanContext): Promise<Finding[]> {
+    // Framework/library targets do not need app-level usage descriptions
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
     // Check if any location-related framework is linked
     const detectedFrameworks = LOCATION_FRAMEWORKS.filter(f => context.hasFramework(f));
     

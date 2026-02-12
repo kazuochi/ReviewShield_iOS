@@ -239,16 +239,33 @@ export function getMainAppTarget(
 export function parseBuildConfigurations(content: string): Map<string, PbxprojBuildConfig> {
   const configs = new Map<string, PbxprojBuildConfig>();
   
-  // Match XCBuildConfiguration entries
-  // Format: ID /* Name */ = { isa = XCBuildConfiguration; buildSettings = { ... }; name = Name; };
-  const configRegex = /([A-Fa-f0-9]{24})\s*\/\*\s*([^*]+?)\s*\*\/\s*=\s*\{[^}]*isa\s*=\s*XCBuildConfiguration[^}]*buildSettings\s*=\s*\{([^}]*)\}[^}]*name\s*=\s*"?([^";]+)"?\s*;[^}]*\};/g;
+  // Find XCBuildConfiguration entries using a brace-counting parser instead of regex
+  // This handles values containing } inside quoted strings (e.g., ${PRODUCT_NAME:rfc1034identifier})
+  const isaPattern = /([A-Fa-f0-9]{24})\s*\/\*\s*([^*]+?)\s*\*\/\s*=\s*\{/g;
   
-  let match;
-  while ((match = configRegex.exec(content)) !== null) {
-    const id = match[1];
-    // match[2] is the comment name (unused)
-    const settingsBlock = match[3];
-    const name = match[4].trim();
+  let isaMatch;
+  while ((isaMatch = isaPattern.exec(content)) !== null) {
+    const id = isaMatch[1];
+    const blockStart = isaMatch.index + isaMatch[0].length;
+    
+    // Extract the full block using brace counting (respecting quoted strings)
+    const blockContent = extractBalancedBlock(content, blockStart);
+    if (!blockContent) continue;
+    
+    // Check if this is an XCBuildConfiguration
+    if (!blockContent.includes('isa = XCBuildConfiguration')) continue;
+    
+    // Extract name
+    const nameMatch = blockContent.match(/name\s*=\s*"?([^";]+)"?\s*;/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1].trim();
+    
+    // Extract buildSettings block
+    const bsStart = blockContent.indexOf('buildSettings = {');
+    if (bsStart === -1) continue;
+    const bsBlockStart = bsStart + 'buildSettings = {'.length;
+    const settingsBlock = extractBalancedBlock(blockContent, bsBlockStart);
+    if (!settingsBlock) continue;
     
     // Parse build settings
     const buildSettings: Record<string, string> = {};
@@ -274,6 +291,30 @@ export function parseBuildConfigurations(content: string): Map<string, PbxprojBu
   }
   
   return configs;
+}
+
+/**
+ * Extract content between balanced braces, respecting quoted strings.
+ * Starts from position after opening brace, returns content up to matching closing brace.
+ */
+function extractBalancedBlock(content: string, startPos: number): string | null {
+  let depth = 1;
+  let inQuote = false;
+  let i = startPos;
+  
+  while (i < content.length && depth > 0) {
+    const ch = content[i];
+    if (ch === '"' && (i === 0 || content[i - 1] !== '\\')) {
+      inQuote = !inQuote;
+    } else if (!inQuote) {
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+    }
+    if (depth > 0) i++;
+  }
+  
+  if (depth !== 0) return null;
+  return content.substring(startPos, i);
 }
 
 /**

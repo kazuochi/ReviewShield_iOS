@@ -132,6 +132,10 @@ export interface ScanContext {
   generatesInfoPlist(): boolean;
   /** Whether this target is an app extension (not a full app) */
   isExtension(): boolean;
+  /** Whether this is a macOS-only target (no iOS support) */
+  isMacOSOnly(): boolean;
+  /** Whether this is a framework/library target (not an app) */
+  isFrameworkTarget(): boolean;
 }
 
 /**

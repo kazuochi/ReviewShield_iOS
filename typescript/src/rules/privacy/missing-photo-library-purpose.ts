@@ -25,6 +25,10 @@ export const MissingPhotoLibraryPurposeRule: Rule = {
   guidelineReference: '5.1.1',
 
   async evaluate(context: ScanContext): Promise<Finding[]> {
+    // Framework/library targets do not need app-level usage descriptions
+    if (context.isFrameworkTarget()) {
+      return [];
+    }
     // Check if any Photos-related framework is linked
     const detectedFrameworks = PHOTO_LIBRARY_FRAMEWORKS.filter(f => context.hasFramework(f));
     
@@ -37,7 +41,9 @@ export const MissingPhotoLibraryPurposeRule: Rule = {
     const photoLibraryAddDescription = context.plistString(PHOTO_LIBRARY_ADD_KEY);
 
     // Case 1: Completely missing read access description
-    if (photoLibraryDescription === undefined) {
+    // If NSPhotoLibraryAddUsageDescription IS present, the app may only save photos (not read),
+    // which is a valid pattern that doesn't require NSPhotoLibraryUsageDescription
+    if (photoLibraryDescription === undefined && photoLibraryAddDescription === undefined) {
       findings.push(makeFinding(this, {
         description: `Your app links against photo library frameworks (${detectedFrameworks.join(', ')}) ` +
           `but Info.plist is missing NSPhotoLibraryUsageDescription. Apps that access the photo library ` +
@@ -54,7 +60,7 @@ If your app only needs to save photos (not read), you can use NSPhotoLibraryAddU
       }));
     }
     // Case 2: Empty description
-    else if (photoLibraryDescription.trim() === '') {
+    else if (photoLibraryDescription !== undefined && photoLibraryDescription.trim() === '') {
       findings.push(makeFinding(this, {
         title: 'Empty Photo Library Usage Description',
         description: `NSPhotoLibraryUsageDescription exists in Info.plist but is empty. ` +
@@ -69,7 +75,7 @@ Bad example: "Photo access required" or ""`,
       }));
     }
     // Case 3: Placeholder text detected
-    else if (isPlaceholder(photoLibraryDescription)) {
+    else if (photoLibraryDescription !== undefined && isPlaceholder(photoLibraryDescription)) {
       findings.push(makeFinding(this, {
         title: 'Placeholder Photo Library Usage Description',
         description: `NSPhotoLibraryUsageDescription appears to contain placeholder text: "${photoLibraryDescription}". ` +
